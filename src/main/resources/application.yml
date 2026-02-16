@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: ticket-management
+    security:
+      jwt:
+        secret: ${JWT_SECRET}
+        jwt-expiration-in-ms: ${JWT_EXPIRATION}
+        refresh-token-expiration-in-ms : ${REFRESH_TOKEN_EXPIRATION}
+        
