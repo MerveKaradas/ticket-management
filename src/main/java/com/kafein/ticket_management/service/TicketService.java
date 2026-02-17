@@ -15,10 +15,12 @@ import jakarta.transaction.Transactional;
 public class TicketService {
 
     private final TicketRepository ticketRepository;
+    private final TicketMapper ticketMapper;
     private final UserService userService;
 
-    public TicketService(TicketRepository ticketRepository, UserService userService) {
+    public TicketService(TicketRepository ticketRepository, UserService userService, TicketMapper ticketMapper) {
         this.ticketRepository = ticketRepository;
+        this.ticketMapper = ticketMapper;
         this.userService = userService;
     }
 
@@ -37,7 +39,7 @@ public class TicketService {
         
         ticketRepository.save(ticket);
 
-        return TicketMapper.toResponseCreateTicketDto(ticket);
+        return ticketMapper.toDto(ticket);
 
     }
 

@@ -25,11 +25,13 @@ import jakarta.transaction.Transactional;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil, UserMapper userMapper) {
         this.userRepository = userRepository;
+        this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
     }
@@ -53,7 +55,7 @@ public class UserService implements UserDetailsService {
 
         userRepository.save(user);
 
-        return UserMapper.toResponseUserDto(user);
+        return userMapper.toDto(user);
 
     }
 
