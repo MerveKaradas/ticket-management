@@ -5,27 +5,7 @@ import com.kafein.ticket_management.model.User;
 import com.kafein.ticket_management.model.enums.TicketPriority;
 import com.kafein.ticket_management.model.enums.TicketStatus;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-// @Setter
-// @NoArgsConstructor
-// @AllArgsConstructor
-// @Builder
-// public class ResponseCreateTicketDto {
-
-//     private String title;
-//     private String description;
-//     private TicketStatus status;
-//     private TicketPriority priority;
-//     private User createdBy;
-//     private User assignedTo;
-//     private LocalDateTime createdAtDate;
-//     private LocalDateTime updatedDate;
-
-// }
 
 @Builder
 public record ResponseCreateTicketDto(

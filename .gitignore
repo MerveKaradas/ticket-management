@@ -4,6 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 .env
+not.txt
 
 ### STS ###
 .apt_generated
