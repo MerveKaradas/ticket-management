@@ -1,0 +1,24 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d 
+
+  ticket-management:
+    build: .
+    container_name: ticket-management
+    ports:
+      - "8080:8080"
+    environment: # .env dosyasından alınanan değerler
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      REFRESH_TOKEN_EXPIRATION: ${REFRESH_TOKEN_EXPIRATION}
+    depends_on:
+      - postgres

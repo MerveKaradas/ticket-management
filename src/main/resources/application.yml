@@ -1,4 +1,13 @@
 spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/ticket_management_db
+    username: postgres 
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
   application:
     name: ticket-management
     security:
