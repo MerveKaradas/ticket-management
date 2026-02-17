@@ -2,6 +2,8 @@ package com.kafein.ticket_management.service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -74,6 +76,10 @@ public class UserService implements UserDetailsService {
 
         return tokens;
        
+    }
+
+    public Optional<User> getUserById(UUID assignedToId) {
+        return userRepository.findById(assignedToId);
     }
 
 
