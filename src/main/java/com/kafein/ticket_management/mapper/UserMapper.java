@@ -11,6 +11,7 @@ public class UserMapper {
         }
 
         return ResponseUserDto.builder()
+            .id(user.getId())
             .name(user.getName())
             .surname(user.getSurname())
             .email(user.getEmail())
