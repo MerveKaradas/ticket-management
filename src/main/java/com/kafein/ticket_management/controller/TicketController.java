@@ -3,6 +3,7 @@ package com.kafein.ticket_management.controller;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,18 +12,21 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kafein.ticket_management.dto.request.RequestCreateTicketDto;
 import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
-import com.kafein.ticket_management.dto.response.ResponseGetAllTicketsDto;
+import com.kafein.ticket_management.dto.response.ResponseTicketDto;
+import com.kafein.ticket_management.model.enums.TicketPriority;
+import com.kafein.ticket_management.model.enums.TicketStatus;
 import com.kafein.ticket_management.service.TicketService;
 
 import jakarta.validation.Valid;
 
 
 @RestController
-@RequestMapping("/api/ticket")
+@RequestMapping("/api/tickets")
 public class TicketController {
 
     private final TicketService ticketService;
@@ -38,7 +42,7 @@ public class TicketController {
 
     @GetMapping("/getAllTickets")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<ResponseGetAllTicketsDto>> getAllTickets(){
+    public ResponseEntity<List<ResponseTicketDto>> getAllTickets(){
         return ResponseEntity.ok(ticketService.getAllTickets());
     }
 
@@ -58,5 +62,16 @@ public class TicketController {
         
     }
     
+
+    @GetMapping("/filter") // TODO : page ve size değerlerini kontrol et
+    public ResponseEntity<Page<ResponseTicketDto>> filterTickets(
+        @RequestParam(required = false) TicketStatus status,
+        @RequestParam(required = false) TicketPriority priority,
+        @RequestParam(required = false) UUID assignedToId ,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(ticketService.filterTickets(status, priority, assignedToId, page, size));
+    }
 
 }
