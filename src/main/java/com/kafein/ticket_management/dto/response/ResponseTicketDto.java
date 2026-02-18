@@ -8,7 +8,7 @@ import com.kafein.ticket_management.model.enums.TicketStatus;
 import lombok.Builder;
 
 @Builder
-public record ResponseGetAllTicketsDto(
+public record ResponseTicketDto(
     String title,
     String description,
     TicketStatus status,
