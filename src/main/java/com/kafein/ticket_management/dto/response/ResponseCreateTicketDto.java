@@ -1,7 +1,6 @@
 package com.kafein.ticket_management.dto.response;
 
 import java.time.LocalDateTime;
-import com.kafein.ticket_management.model.User;
 import com.kafein.ticket_management.model.enums.TicketPriority;
 import com.kafein.ticket_management.model.enums.TicketStatus;
 
@@ -13,8 +12,8 @@ public record ResponseCreateTicketDto(
     String description,
     TicketStatus status,
     TicketPriority priority,
-    User createdBy,
-    User assignedTo,
+    ResponseUserDto createdBy,
+    ResponseUserDto assignedTo,
     LocalDateTime createdAtDate,
     LocalDateTime updatedDate) {
 
