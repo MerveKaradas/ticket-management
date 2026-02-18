@@ -1,6 +1,7 @@
 package com.kafein.ticket_management.service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,6 +17,7 @@ import com.kafein.ticket_management.dto.request.RequestLoginDto;
 import com.kafein.ticket_management.dto.response.ResponseUserDto;
 import com.kafein.ticket_management.mapper.UserMapper;
 import com.kafein.ticket_management.model.User;
+import com.kafein.ticket_management.model.enums.Role;
 import com.kafein.ticket_management.repository.UserRepository;
 import com.kafein.ticket_management.security.JwtUtil;
 
@@ -82,6 +84,29 @@ public class UserService implements UserDetailsService {
 
     public Optional<User> getUserById(UUID assignedToId) {
         return userRepository.findById(assignedToId);
+    }
+
+
+    @Transactional
+    public void createAdminUser() {
+        if (!userRepository.existsByEmail("admin@kafein.com")) {
+            User admin = User.builder()
+                    .email("admin@kafein.com")
+                    .password(passwordEncoder.encode("admin123"))
+                    .role(Role.ADMIN)
+                    .name("Admin")
+                    .surname("Kafein")
+                    .build();
+            userRepository.save(admin);
+        }
+    }
+
+    public List<ResponseUserDto> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .filter(user -> user.getRole() == Role.USER)
+                .map(user -> userMapper.toDto(user))
+                .toList();
     }
 
 

@@ -1,9 +1,13 @@
 package com.kafein.ticket_management.service;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 
 import com.kafein.ticket_management.dto.request.RequestCreateTicketDto;
 import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
+import com.kafein.ticket_management.dto.response.ResponseGetAllTicketsDto;
 import com.kafein.ticket_management.mapper.TicketMapper;
 import com.kafein.ticket_management.model.Ticket;
 import com.kafein.ticket_management.model.User;
@@ -41,6 +45,25 @@ public class TicketService {
 
         return ticketMapper.toDto(ticket);
 
+    }
+
+    public List<ResponseGetAllTicketsDto> getAllTickets() {
+
+        return ticketRepository.findAll()
+                .stream()
+                .map((ticket) -> ticketMapper.toGetAllTicketsDto(ticket))
+                .toList();        
+    }
+
+    
+    @Transactional
+    public void deleteAllTickets() {
+        ticketRepository.deleteAll();
+    }
+
+    @Transactional
+    public void deleteTicketById(UUID id) {
+        ticketRepository.deleteById(id);
     }
 
 }
