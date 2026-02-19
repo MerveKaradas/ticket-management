@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.kafein.ticket_management.dto.request.RequestCommentDto;
 import com.kafein.ticket_management.dto.response.ResponseCommentDto;
+import com.kafein.ticket_management.exception.ResourceNotFoundException;
 import com.kafein.ticket_management.mapper.CommentMapper;
 import com.kafein.ticket_management.model.Comment;
 import com.kafein.ticket_management.model.Ticket;
@@ -31,7 +32,7 @@ public class CommentService {
     public ResponseCommentDto addComment(UUID ticketId, RequestCommentDto commentDto) {
 
         Ticket ticket = ticketService.getTicketById(ticketId)
-                        .orElseThrow(() -> new RuntimeException("Yorum yapilacak ticket bulunamadi!"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Ticket", "ticketId", ticketId));
 
         Comment comment = new Comment();
         comment.setContent(commentDto.getContent());
@@ -44,7 +45,7 @@ public class CommentService {
 
     public List<ResponseCommentDto> getAllCommentsByTicketId(UUID ticketId) {
         Ticket ticket = ticketService.getTicketById(ticketId)
-                        .orElseThrow(() -> new RuntimeException("Ticket bulunamadi!"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Ticket", "ticketId", ticketId));
 
         List<Comment> comments = commentRepository.findAllByTicket(ticket);
         return commentMapper.toDtoList(comments);
@@ -55,7 +56,7 @@ public class CommentService {
     public void deleteComment(UUID commentId) {
 
         Comment comment = commentRepository.findById(commentId)
-                            .orElseThrow(()-> new RuntimeException("Silinecek yorum bulunamadi : " + commentId));
+                            .orElseThrow(()-> new ResourceNotFoundException("Comment", "commentId", commentId));
                             
         commentRepository.deleteById(commentId);
     }

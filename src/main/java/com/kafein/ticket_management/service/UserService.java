@@ -6,15 +6,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException.BadRequest;
 
 import com.kafein.ticket_management.dto.request.RequestCreateUserDto;
 import com.kafein.ticket_management.dto.request.RequestLoginDto;
 import com.kafein.ticket_management.dto.response.ResponseUserDto;
+import com.kafein.ticket_management.exception.ResourceNotFoundException;
 import com.kafein.ticket_management.mapper.UserMapper;
 import com.kafein.ticket_management.model.User;
 import com.kafein.ticket_management.model.enums.Role;
@@ -40,9 +43,8 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // TODO : EXCEPTION KISMI DUZENLENECEK
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Kullanici bulunamadi : " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }
 
     @Transactional // TODO : HANGİ FRAMEWORK BAK
@@ -64,10 +66,10 @@ public class UserService implements UserDetailsService {
     public Map<String, String> login(RequestLoginDto requestLoginDto) {
         
         User user = userRepository.findByEmail(requestLoginDto.getEmail())
-                .orElseThrow(() -> new RuntimeException("Kullanici bulunamadi : " + requestLoginDto.getEmail()));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", requestLoginDto.getEmail()));
 
         if (!passwordEncoder.matches(requestLoginDto.getPassword(), user.getPassword())){
-            throw new RuntimeException("Kullanici veya şifre hatali");
+            throw new BadCredentialsException("Email veya şifre hatali");
         }
 
         Map<String, String> tokens = new HashMap<>();

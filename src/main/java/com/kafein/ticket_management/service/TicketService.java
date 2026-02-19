@@ -9,6 +9,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,9 @@ import com.kafein.ticket_management.dto.request.RequestCreateTicketDto;
 import com.kafein.ticket_management.dto.request.RequestTicketDto;
 import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
 import com.kafein.ticket_management.dto.response.ResponseTicketDto;
+import com.kafein.ticket_management.exception.BusinessException;
+import com.kafein.ticket_management.exception.ResourceNotFoundException;
+import com.kafein.ticket_management.exception.UnauthorizedException;
 import com.kafein.ticket_management.mapper.TicketMapper;
 import com.kafein.ticket_management.model.Ticket;
 import com.kafein.ticket_management.model.User;
@@ -42,8 +47,8 @@ public class TicketService {
     public ResponseCreateTicketDto createTicket(RequestCreateTicketDto requestCreateTicketDto) {
 
         User user = userService.getUserById(requestCreateTicketDto.getAssignedToId())
-                .orElseThrow(() -> new RuntimeException(
-                        "Kullanici bulunamadi : " + requestCreateTicketDto.getAssignedToId()));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("User", "id", requestCreateTicketDto.getAssignedToId()));
 
         Ticket ticket = Ticket.builder()
                 .title(requestCreateTicketDto.getTitle())
@@ -100,10 +105,10 @@ public class TicketService {
     public ResponseTicketDto updateTicketStatus(UUID ticketId, TicketStatus status) {
 
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket bulunamadi : " + ticketId));
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
         if (ticket.getStatus() == TicketStatus.DONE) {
-            throw new RuntimeException("Kapanmış bir biletin durumunu değiştiremezsiniz!");
+            throw new BusinessException("Kapanmış bir biletin durumunu değiştiremezsiniz!");
         }
 
         if (ticket.getAssignedTo().getId().equals(getCurrentUserId())) {
@@ -114,29 +119,32 @@ public class TicketService {
                     (ticket.getStatus() == TicketStatus.IN_PROGRESS && status == TicketStatus.DONE);
 
             if (!isValidTransition) {
-                throw new RuntimeException("Geçersiz statü geçişi!");
+                throw new BusinessException("Geçersiz statü geçişi!");
             }
 
             ticket.setStatus(status);
             ticketRepository.save(ticket);
             return ticketMapper.toDto(ticket);
         } else {
-            throw new RuntimeException("Bu bilet sadece atanmış kullanıcı tarafından güncellebilir!");
+            throw new AccessDeniedException("Bu bilet sadece atanmış kullanıcı tarafından güncellebilir!");
         }
     }
 
     private UUID getCurrentUserId() {
-        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (currentUser != null) {
-            return currentUser.getId();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+            throw new UnauthorizedException();
         }
-        throw new RuntimeException("Kullanıcı bulunamadı");
+
+        User currentUser = (User) authentication.getPrincipal();
+        return currentUser.getId();
     }
 
     @Transactional // TODO : İŞ KURALLARINI GELİŞTİR
     public ResponseTicketDto updateTicket(UUID ticketId, RequestTicketDto requestTicketDto) {
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket bulunamadi : " + ticketId));
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket","id" ,ticketId));
 
         if (ticket.getCreatedBy().getId().equals(getCurrentUserId())) {
 
@@ -148,27 +156,26 @@ public class TicketService {
                 ticket.setStatus(updateTicketStatus(ticketId, requestTicketDto.getStatus()).status());
             }
 
-            if (requestTicketDto.getAssignedToId() != null) { 
-              
+            if (requestTicketDto.getAssignedToId() != null) {
+
                 User newAssignee = userService.getUserById(requestTicketDto.getAssignedToId())
-                    .orElseThrow(() -> new RuntimeException("Atanacak kullanıcı bulunamadı"));
+                        .orElseThrow(() -> new ResourceNotFoundException("User","id",requestTicketDto.getAssignedToId()));
 
                 ticket.setAssignedTo(newAssignee);
-                
+
             }
 
         } else {
-            throw new RuntimeException("Bu bileti sadece oluşturan kullanıcı güncelleyebilir!");
+            throw new BusinessException("Bu bileti sadece oluşturan kullanıcı güncelleyebilir!");
         }
 
         return ticketMapper.toDto(ticketRepository.save(ticket));
 
     }
 
-
     public Optional<Ticket> getTicketById(UUID ticketId) {
         return ticketRepository.findById(ticketId);
 
-    } 
+    }
 
 }
