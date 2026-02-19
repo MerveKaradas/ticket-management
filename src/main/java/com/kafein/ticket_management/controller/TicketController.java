@@ -8,8 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,6 +23,7 @@ import com.kafein.ticket_management.dto.response.ResponseTicketDto;
 import com.kafein.ticket_management.model.enums.TicketPriority;
 import com.kafein.ticket_management.model.enums.TicketStatus;
 import com.kafein.ticket_management.service.TicketService;
+import com.kafein.ticket_management.dto.request.RequestTicketDto;
 
 import jakarta.validation.Valid;
 
@@ -62,7 +65,6 @@ public class TicketController {
         
     }
     
-
     @GetMapping("/filter") // TODO : page ve size değerlerini kontrol et
     public ResponseEntity<Page<ResponseTicketDto>> filterTickets(
         @RequestParam(required = false) TicketStatus status,
@@ -74,4 +76,16 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.filterTickets(status, priority, assignedToId, page, size));
     }
 
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ResponseTicketDto> updateTicketStatus(@PathVariable UUID id, @RequestParam TicketStatus status) {
+        return ResponseEntity.ok(ticketService.updateTicketStatus(id, status));
+    }
+
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ResponseTicketDto> updateTicket(@PathVariable("id") UUID ticketId, @RequestBody RequestTicketDto requestTicketDto){
+        return ResponseEntity.ok(ticketService.updateTicket(ticketId,requestTicketDto));
+    }
 }
