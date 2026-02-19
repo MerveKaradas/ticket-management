@@ -1,14 +1,13 @@
 package com.kafein.ticket_management.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import com.kafein.ticket_management.model.enums.TicketPriority;
 import com.kafein.ticket_management.model.enums.TicketStatus;
 
-import lombok.Builder;
-
-@Builder
 public record ResponseTicketDto(
+    UUID id,
     String title,
     String description,
     TicketStatus status,

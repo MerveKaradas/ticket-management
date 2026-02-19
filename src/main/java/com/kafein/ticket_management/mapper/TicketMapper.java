@@ -8,6 +8,12 @@ import com.kafein.ticket_management.model.Ticket;
 
 @Mapper(componentModel = "spring")
 public interface TicketMapper {
-    ResponseCreateTicketDto toDto(Ticket ticket);
-    ResponseTicketDto toGetAllTicketsDto(Ticket ticket);
-} 
+    ResponseCreateTicketDto toCreateTicketDto(Ticket ticket);
+
+    ResponseTicketDto toDto(Ticket ticket);
+
+    // @Mapping(target = "id", ignore = true)
+    // @Mapping(target = "status", ignore = true) // Statü genel güncelleme ile değişmesin
+    // @Mapping(target = "assignedTo", ignore = true) // Atanan kişi genel güncelleme ile değişmesin
+    // void updateEntityFromDto(RequestTicketDto dto, @MappingTarget Ticket entity);
+}

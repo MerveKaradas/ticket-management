@@ -4,10 +4,6 @@ import java.util.UUID;
 
 import com.kafein.ticket_management.model.enums.Role;
 
-import lombok.Builder;
-
-
-@Builder
 public record ResponseUserDto(
     UUID id,
     String name,

@@ -11,19 +11,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.kafein.ticket_management.model.enums.Role;
 
-
 @Configuration
 @EnableWebSecurity // güvenlik yapilandirmasi etkinleştirir
-@EnableMethodSecurity // method seviyesinde güvenlik kontrolleri için gerekli anatasyonları etkinleştirir
+@EnableMethodSecurity // method seviyesinde güvenlik kontrolleri için gerekli anatasyonları
+                      // etkinleştirir
 public class SecurityConfig {
-    
+
     private final JwtAuthFilter jwtAuthFilter;
 
-    
     public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
     }
-
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -31,14 +29,18 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/user/login", "/api/user/createUser").permitAll()
-                        .requestMatchers("/swagger.html","/swagger-ui/**", "/swagger-ui.html", "/docs/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/users/login", "/api/users/createUser").permitAll()
+                        .requestMatchers("/v3/api-docs", 
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/swagger-resources/**",
+                                "/webjars/**")
+                        .permitAll()
                         .requestMatchers("/api/admin/**").hasRole(Role.ADMIN.name())
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
-    
 }
