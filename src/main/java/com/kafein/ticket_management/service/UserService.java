@@ -65,13 +65,17 @@ public class UserService implements UserDetailsService {
 
     public Map<String, String> login(RequestLoginDto requestLoginDto) {
         
+        // User user = userRepository.findByEmail(requestLoginDto.getEmail())
+        //         .orElseThrow(() -> new ResourceNotFoundException("User", "email", requestLoginDto.getEmail()));
+
+        // if (!passwordEncoder.matches(requestLoginDto.getPassword(), user.getPassword())){
+        //     throw new BadCredentialsException("Email veya şifre hatali");
+        // }
+
         User user = userRepository.findByEmail(requestLoginDto.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", requestLoginDto.getEmail()));
-
-        if (!passwordEncoder.matches(requestLoginDto.getPassword(), user.getPassword())){
-            throw new BadCredentialsException("Email veya şifre hatali");
-        }
-
+            .filter(u -> passwordEncoder.matches(requestLoginDto.getPassword(), u.getPassword()))
+            .orElseThrow(() -> new BadCredentialsException("Email veya şifre hatalı"));
+            
         Map<String, String> tokens = new HashMap<>();
 
         String refreshToken = jwtUtil.generateRefreshToken(user);
