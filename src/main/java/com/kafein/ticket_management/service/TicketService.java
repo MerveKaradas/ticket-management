@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.kafein.ticket_management.aop.Audit;
 import com.kafein.ticket_management.dto.request.RequestCreateTicketDto;
 import com.kafein.ticket_management.dto.request.RequestTicketDto;
 import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
@@ -44,6 +45,7 @@ public class TicketService {
     }
 
     @Transactional
+    @Audit(action = "TICKET_CREATED")
     public ResponseCreateTicketDto createTicket(RequestCreateTicketDto requestCreateTicketDto) {
 
         User user = userService.getUserById(requestCreateTicketDto.getAssignedToId())
@@ -72,11 +74,13 @@ public class TicketService {
     }
 
     @Transactional
+    @Audit(action = "TICKET_DELETE_ALL")
     public void deleteAllTickets() {
         ticketRepository.deleteAll();
     }
 
     @Transactional
+    @Audit(action = "TICKET_DELETE")
     public void deleteTicketById(UUID id) {
         ticketRepository.deleteById(id);
     }
@@ -102,6 +106,7 @@ public class TicketService {
     }
 
     @Transactional
+    @Audit(action = "TICKET_UPDATE_STATUS")
     public ResponseTicketDto updateTicketStatus(UUID ticketId, TicketStatus status) {
 
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -142,6 +147,7 @@ public class TicketService {
     }
 
     @Transactional // TODO : İŞ KURALLARINI GELİŞTİR
+    @Audit(action = "TICKET_UPDATE")
     public ResponseTicketDto updateTicket(UUID ticketId, RequestTicketDto requestTicketDto) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket","id" ,ticketId));

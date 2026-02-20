@@ -12,8 +12,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException.BadRequest;
 
+import com.kafein.ticket_management.aop.Audit;
 import com.kafein.ticket_management.dto.request.RequestCreateUserDto;
 import com.kafein.ticket_management.dto.request.RequestLoginDto;
 import com.kafein.ticket_management.dto.response.ResponseUserDto;
@@ -48,6 +48,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional // TODO : HANGİ FRAMEWORK BAK
+    @Audit(action = "USER_CREATED")
     public ResponseUserDto createUser(RequestCreateUserDto requestCreateUserDto) {
 
         User user = User.builder()
@@ -63,15 +64,9 @@ public class UserService implements UserDetailsService {
 
     }
 
+    @Audit(action = "USER_LOGIN")
     public Map<String, String> login(RequestLoginDto requestLoginDto) {
         
-        // User user = userRepository.findByEmail(requestLoginDto.getEmail())
-        //         .orElseThrow(() -> new ResourceNotFoundException("User", "email", requestLoginDto.getEmail()));
-
-        // if (!passwordEncoder.matches(requestLoginDto.getPassword(), user.getPassword())){
-        //     throw new BadCredentialsException("Email veya şifre hatali");
-        // }
-
         User user = userRepository.findByEmail(requestLoginDto.getEmail())
             .filter(u -> passwordEncoder.matches(requestLoginDto.getPassword(), u.getPassword()))
             .orElseThrow(() -> new BadCredentialsException("Email veya şifre hatalı"));
@@ -98,7 +93,7 @@ public class UserService implements UserDetailsService {
         if (!userRepository.existsByEmail("admin@kafein.com")) {
             User admin = User.builder()
                     .email("admin@kafein.com")
-                    .password(passwordEncoder.encode("admin123"))
+                    .password(passwordEncoder.encode("Adminkafein123!"))
                     .role(Role.ADMIN)
                     .name("Admin")
                     .surname("Kafein")
