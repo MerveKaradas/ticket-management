@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,6 +15,8 @@ import com.kafein.ticket_management.dto.request.RequestCreateUserDto;
 import com.kafein.ticket_management.dto.request.RequestLoginDto;
 import com.kafein.ticket_management.dto.response.ResponseUserDto;
 import com.kafein.ticket_management.service.UserService;
+
+import jakarta.validation.Valid;
 
 
 @RestController
@@ -28,13 +29,13 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping("/createUser") // TODO : Validated ve valide tekrar bak
-    public ResponseEntity<ResponseUserDto> createUser(@RequestBody @Validated RequestCreateUserDto requestCreateUserDto){
+    @PostMapping("/createUser") 
+    public ResponseEntity<ResponseUserDto> createUser(@RequestBody @Valid RequestCreateUserDto requestCreateUserDto){
         return ResponseEntity.ok(userService.createUser(requestCreateUserDto));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody RequestLoginDto requestLoginDto) {
+    public ResponseEntity<Map<String, String>> login(@RequestBody @Valid RequestLoginDto requestLoginDto) {
         return ResponseEntity.ok(userService.login(requestLoginDto));
     }
 

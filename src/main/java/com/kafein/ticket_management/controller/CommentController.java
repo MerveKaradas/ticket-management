@@ -17,6 +17,8 @@ import com.kafein.ticket_management.dto.request.RequestCommentDto;
 import com.kafein.ticket_management.dto.response.ResponseCommentDto;
 import com.kafein.ticket_management.service.CommentService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/comments")
 @PreAuthorize("hasRole('USER')")
@@ -30,7 +32,7 @@ public class CommentController {
 
 
     @PostMapping("/{ticketId}/comments")
-    public ResponseEntity<ResponseCommentDto> addComment(@PathVariable UUID ticketId, @RequestBody RequestCommentDto commentDto){
+    public ResponseEntity<ResponseCommentDto> addComment(@PathVariable UUID ticketId, @RequestBody @Valid RequestCommentDto commentDto){
         return ResponseEntity.ok(commentService.addComment(ticketId,commentDto));
     }
 

@@ -85,7 +85,7 @@ public class TicketController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ResponseTicketDto> updateTicket(@PathVariable("id") UUID ticketId, @RequestBody RequestTicketDto requestTicketDto){
+    public ResponseEntity<ResponseTicketDto> updateTicket(@PathVariable("id") UUID ticketId, @RequestBody @Valid RequestTicketDto requestTicketDto){
         return ResponseEntity.ok(ticketService.updateTicket(ticketId,requestTicketDto));
     }
 }
