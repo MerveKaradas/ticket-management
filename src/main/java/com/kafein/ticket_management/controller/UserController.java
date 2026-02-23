@@ -45,6 +45,13 @@ public class UserController {
         return ResponseEntity.ok(userService.login(requestLoginDto));
     }
 
+    @Operation(summary = "Sistemden Çıkış", description = "Oturum açmış kullanıcının oturumu sonlandırılır")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        userService.logout();
+        return ResponseEntity.ok().build();
+    }
+
     @Operation(summary = "Tüm Kullanıcıları Listeleme", 
                description = "Sadece 'ADMIN' yetkisine sahip olan kullanıcılar sistemde kayıtlı olan tüm kullanıcı listesini görünteyebilir.")
     @GetMapping("/getAllUsers")

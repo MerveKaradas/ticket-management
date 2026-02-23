@@ -32,15 +32,18 @@ import com.kafein.ticket_management.security.JwtUtil;
 import jakarta.transaction.Transactional;
 
 @Service
-public class UserService implements UserDetailsService { 
+public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final RefreshTokenService refreshTokenService;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil, UserMapper userMapper) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil,
+            UserMapper userMapper, RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
+        this.refreshTokenService = refreshTokenService;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
@@ -56,8 +59,7 @@ public class UserService implements UserDetailsService {
     @Audit(action = "USER_CREATED")
     public ResponseUserDto createUser(RequestCreateUserDto requestCreateUserDto) {
 
-        if(userRepository.existsByEmail(requestCreateUserDto.email()))
-        {
+        if (userRepository.existsByEmail(requestCreateUserDto.email())) {
             throw new UserAlreadyExistsException();
         }
 
@@ -74,29 +76,43 @@ public class UserService implements UserDetailsService {
 
     }
 
+    @Transactional
     @Audit(action = "USER_LOGIN")
     public Map<String, String> login(RequestLoginDto requestLoginDto) {
-        
+
         User user = userRepository.findByEmail(requestLoginDto.email())
-            .filter(u -> passwordEncoder.matches(requestLoginDto.password(), u.getPassword()))
-            .orElseThrow(() -> new BadCredentialsException("Email veya şifre hatalı"));
-            
+                .filter(u -> passwordEncoder.matches(requestLoginDto.password(), u.getPassword()))
+                .orElseThrow(() -> new BadCredentialsException("Email veya şifre hatalı"));
+
         Map<String, String> tokens = new HashMap<>();
 
         String refreshToken = jwtUtil.generateRefreshToken(user);
         String accessToken = jwtUtil.generateToken(user);
 
+        refreshTokenService.saveRefreshToken(refreshToken, user.getId());
+
         tokens.put("accessToken", accessToken);
         tokens.put("refreshToken", refreshToken);
 
         return tokens;
-       
+
+    }
+
+    @Transactional
+    public void logout() {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User user) {
+            refreshTokenService.revokeRefreshToken(user);
+        } else {
+            throw new UnauthorizedException();
+        }
+
     }
 
     public Optional<User> getUserById(UUID assignedToId) {
         return userRepository.findById(assignedToId);
     }
-
 
     @Transactional
     public void createAdminUser() {
@@ -113,7 +129,7 @@ public class UserService implements UserDetailsService {
     }
 
     public List<ResponseUserDto> getAllUsers() {
-        if(!isAdmin()){
+        if (!isAdmin()) {
             throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
         }
 
@@ -124,18 +140,17 @@ public class UserService implements UserDetailsService {
                 .toList();
     }
 
-
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication.getPrincipal().equals("anonymousUser")) {
             throw new UnauthorizedException();
         }
 
         User currentUser = (User) authentication.getPrincipal();
         return currentUser;
     }
-
 
     public boolean isAdmin() {
         User currentUser = getCurrentUser();
@@ -148,6 +163,5 @@ public class UserService implements UserDetailsService {
         }
         return false;
     }
-
 
 }
