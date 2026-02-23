@@ -23,11 +23,15 @@ import com.kafein.ticket_management.dto.response.ResponseTicketDto;
 import com.kafein.ticket_management.model.enums.TicketPriority;
 import com.kafein.ticket_management.model.enums.TicketStatus;
 import com.kafein.ticket_management.service.TicketService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.kafein.ticket_management.dto.request.RequestTicketDto;
 
 import jakarta.validation.Valid;
 
-
+@Tag(name = "Ticket API", description = "Bilet oluşturma, temel CRUD işlemleri ve filtreleme işlemleri")
 @RestController
 @RequestMapping("/api/tickets")
 public class TicketController {
@@ -38,17 +42,22 @@ public class TicketController {
         this.ticketService = ticketService;
     }
 
+    @Operation(summary = "Yeni Bilet Oluşturma")
     @PostMapping("/createTicket")
     public ResponseEntity<ResponseCreateTicketDto> createTicket(@RequestBody @Valid RequestCreateTicketDto requestCreateTicketDto){
         return ResponseEntity.ok(ticketService.createTicket(requestCreateTicketDto));
     }
 
+    @Operation(summary = "Tüm Biletleri Görüntüleme", 
+                description = "'ADMIN' yetkisine sahip olan kullanıcı tüm biletleri görünteyebilir.")
     @GetMapping("/getAllTickets")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ResponseTicketDto>> getAllTickets(){
         return ResponseEntity.ok(ticketService.getAllTickets());
     }
 
+    @Operation(summary = "Tüm Biletleri Silme", 
+                description = "'ADMIN' yetkisine sahip olan kullanıcı tüm biletleri silebilir.")
     @DeleteMapping("/deleteAllTickets")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteAllTickets(){
@@ -57,6 +66,8 @@ public class TicketController {
         
     }
 
+    @Operation(summary = "Bilet Silme", 
+                description = "'ADMIN' yetkisine sahip olan kullanıcı bileti silebilir.")
     @DeleteMapping("/deleteTicket/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteTicketById(@PathVariable UUID id){
@@ -65,6 +76,8 @@ public class TicketController {
         
     }
     
+    @Operation(summary = "Biletleri Filtreleyerek Listeleme", 
+                description = "Filtreleme seçeneklerine uygun olan biletler listelenir.")
     @GetMapping("/filter") // TODO : page ve size değerlerini kontrol et
     public ResponseEntity<Page<ResponseTicketDto>> filterTickets(
         @RequestParam(required = false) TicketStatus status,
@@ -76,6 +89,8 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.filterTickets(status, priority, assignedToId, page, size));
     }
 
+    @Operation(summary = "Bilet Durumunu Güncelleme (Statü Geçişi)", 
+                description = "Biletin durumunu OPEN -> IN_PROGRESS -> DONE sırasıyla günceller. Sadece bilete atanan kullanıcı bu işlemi yapabilir. DONE durumundaki biletler tekrar OPEN yapılamaz.")
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ResponseTicketDto> updateTicketStatus(@PathVariable UUID id, @RequestParam TicketStatus status) {
@@ -83,6 +98,8 @@ public class TicketController {
     }
 
 
+    @Operation(summary = "Bilet İçeriğini Değiştirme", 
+                description = "Sadece bilete atanan kullanıcı bilet içeriğini güncelleyebilir.")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ResponseTicketDto> updateTicket(@PathVariable("id") UUID ticketId, @RequestBody @Valid RequestTicketDto requestTicketDto){

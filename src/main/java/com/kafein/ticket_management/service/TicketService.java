@@ -10,8 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.kafein.ticket_management.aop.Audit;
@@ -21,7 +19,6 @@ import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
 import com.kafein.ticket_management.dto.response.ResponseTicketDto;
 import com.kafein.ticket_management.exception.BusinessException;
 import com.kafein.ticket_management.exception.ResourceNotFoundException;
-import com.kafein.ticket_management.exception.UnauthorizedException;
 import com.kafein.ticket_management.mapper.TicketMapper;
 import com.kafein.ticket_management.model.Ticket;
 import com.kafein.ticket_management.model.User;
@@ -48,14 +45,14 @@ public class TicketService {
     @Audit(action = "TICKET_CREATED")
     public ResponseCreateTicketDto createTicket(RequestCreateTicketDto requestCreateTicketDto) {
 
-        User user = userService.getUserById(requestCreateTicketDto.getAssignedToId())
+        User user = userService.getUserById(requestCreateTicketDto.assignedToId())
                 .orElseThrow(
-                        () -> new ResourceNotFoundException("User", "id", requestCreateTicketDto.getAssignedToId()));
+                        () -> new ResourceNotFoundException("User", "id", requestCreateTicketDto.assignedToId()));
 
         Ticket ticket = Ticket.builder()
-                .title(requestCreateTicketDto.getTitle())
-                .description(requestCreateTicketDto.getDescription())
-                .priority(requestCreateTicketDto.getPriority())
+                .title(requestCreateTicketDto.title())
+                .description(requestCreateTicketDto.description())
+                .priority(requestCreateTicketDto.priority())
                 .assignedTo(user)
                 .build();
 
@@ -67,16 +64,24 @@ public class TicketService {
 
     public List<ResponseTicketDto> getAllTickets() {
 
-        return ticketRepository.findAll()
-                .stream()
-                .map((ticket) -> ticketMapper.toDto(ticket))
-                .toList();
+        if (userService.isAdmin()) {
+            return ticketRepository.findAll()
+                    .stream()
+                    .map((ticket) -> ticketMapper.toDto(ticket))
+                    .toList();
+        } else {
+            throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
+        }
     }
 
     @Transactional
     @Audit(action = "TICKET_DELETE_ALL")
     public void deleteAllTickets() {
-        ticketRepository.deleteAll();
+        if (userService.isAdmin()) {
+            ticketRepository.deleteAll();
+        } else {
+            throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
+        }
     }
 
     @Transactional
@@ -116,7 +121,7 @@ public class TicketService {
             throw new BusinessException("Kapanmış bir biletin durumunu değiştiremezsiniz!");
         }
 
-        if (ticket.getAssignedTo().getId().equals(getCurrentUserId())) {
+        if (ticket.getAssignedTo().getId().equals(userService.getCurrentUser().getId())) {
 
             // Statü geçişi geçerli mi kontrolü
             boolean isValidTransition = (ticket.getStatus() == TicketStatus.OPEN && status == TicketStatus.IN_PROGRESS)
@@ -135,37 +140,27 @@ public class TicketService {
         }
     }
 
-    private UUID getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
-            throw new UnauthorizedException();
-        }
-
-        User currentUser = (User) authentication.getPrincipal();
-        return currentUser.getId();
-    }
-
     @Transactional // TODO : İŞ KURALLARINI GELİŞTİR
     @Audit(action = "TICKET_UPDATE")
     public ResponseTicketDto updateTicket(UUID ticketId, RequestTicketDto requestTicketDto) {
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket","id" ,ticketId));
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
-        if (ticket.getCreatedBy().getId().equals(getCurrentUserId())) {
+        if (ticket.getCreatedBy().getId().equals(userService.getCurrentUser().getId())) {
 
-            ticket.setTitle(requestTicketDto.getTitle());
-            ticket.setDescription(requestTicketDto.getDescription());
-            ticket.setPriority(requestTicketDto.getPriority());
+            ticket.setTitle(requestTicketDto.title());
+            ticket.setDescription(requestTicketDto.description());
+            ticket.setPriority(requestTicketDto.priority());
 
-            if (requestTicketDto.getStatus() != null && !ticket.getStatus().equals(requestTicketDto.getStatus())) {
-                ticket.setStatus(updateTicketStatus(ticketId, requestTicketDto.getStatus()).status());
+            if (requestTicketDto.status() != null && !ticket.getStatus().equals(requestTicketDto.status())) {
+                ticket.setStatus(updateTicketStatus(ticketId, requestTicketDto.status()).status());
             }
 
-            if (requestTicketDto.getAssignedToId() != null) {
+            if (requestTicketDto.assignedToId() != null) {
 
-                User newAssignee = userService.getUserById(requestTicketDto.getAssignedToId())
-                        .orElseThrow(() -> new ResourceNotFoundException("User","id",requestTicketDto.getAssignedToId()));
+                User newAssignee = userService.getUserById(requestTicketDto.assignedToId())
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException("User", "id", requestTicketDto.assignedToId()));
 
                 ticket.setAssignedTo(newAssignee);
 
@@ -183,5 +178,7 @@ public class TicketService {
         return ticketRepository.findById(ticketId);
 
     }
+
+   
 
 }

@@ -16,9 +16,11 @@ import com.kafein.ticket_management.dto.request.RequestLoginDto;
 import com.kafein.ticket_management.dto.response.ResponseUserDto;
 import com.kafein.ticket_management.service.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-
+@Tag(name = "User API", description = "User register, login ve listeleme işlemleri")
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -29,23 +31,25 @@ public class UserController {
         this.userService = userService;
     }
 
+    @Operation(summary = "Kullanıcı Oluşturma", 
+               description = "Sistemde daha önce kaydı bulunmayan kullanıcılar yeni kullanıcı kaydı oluşturabilir.")
     @PostMapping("/createUser") 
     public ResponseEntity<ResponseUserDto> createUser(@RequestBody @Valid RequestCreateUserDto requestCreateUserDto){
         return ResponseEntity.ok(userService.createUser(requestCreateUserDto));
     }
 
+    @Operation(summary = "Sisteme Giriş", 
+               description = "Sistemde kayıtlı bulunan kullanıcı sisteme giriş yaparak refresh ve access token alır ve access token ile sisteme giriş yapabilir.")
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody @Valid RequestLoginDto requestLoginDto) {
         return ResponseEntity.ok(userService.login(requestLoginDto));
     }
 
+    @Operation(summary = "Tüm Kullanıcıları Listeleme", 
+               description = "Sadece 'ADMIN' yetkisine sahip olan kullanıcılar sistemde kayıtlı olan tüm kullanıcı listesini görünteyebilir.")
     @GetMapping("/getAllUsers")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ResponseUserDto>> getAllUsers(){
         return ResponseEntity.ok(userService.getAllUsers());
     }
-
-
-    
-    
 }

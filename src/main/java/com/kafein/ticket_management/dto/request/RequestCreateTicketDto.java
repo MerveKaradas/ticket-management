@@ -4,32 +4,27 @@ import java.util.UUID;
 
 import com.kafein.ticket_management.model.enums.TicketPriority;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-
-@Setter
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-public class RequestCreateTicketDto {
-
+public record RequestCreateTicketDto(
+    
+    @Schema(example = "Örnek Başlık")
     @NotBlank(message = "Bilet başlığı boş olamaz")
     @Size(min = 5, max = 150, message = "Başlık 5-150 karakter arasında olmalıdır")
-    private String title;
+    String title,
 
+    @Schema(example = "Bilete uygun olarak açıklamayı oluşturmalısınız.")
     @Size(max = 2000, message = "Açıklama çok uzun")
-    private String description;
+    String description,
 
+    @Schema(example = "LOW")
     @NotNull(message = "Öncelik seviyesi belirtilmelidir")
-    private TicketPriority priority;
+    TicketPriority priority,
 
+    @Schema(description = "Bileti sistemde bulunan kullanıcı ID'si(UUID) üzerinden atamalısınız", example = "21e06296-fbc7-45a0-bfc6-bacff7942a0a")
     @NotNull(message = "Atanacak kullanıcıyı belirleme zorunludur")
-    private UUID assignedToId;
-    
-}
+    UUID assignedToId
+) {}

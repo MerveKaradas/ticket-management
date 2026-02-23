@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.kafein.ticket_management.dto.request.RequestCommentDto;
 import com.kafein.ticket_management.dto.response.ResponseCommentDto;
+import com.kafein.ticket_management.exception.BusinessException;
 import com.kafein.ticket_management.exception.ResourceNotFoundException;
 import com.kafein.ticket_management.mapper.CommentMapper;
 import com.kafein.ticket_management.model.Comment;
@@ -19,11 +20,13 @@ import jakarta.transaction.Transactional;
 public class CommentService {
 
     private final CommentRepository commentRepository;
+    private final UserService userService;
     private final TicketService ticketService;
     private final CommentMapper commentMapper;
 
-    public CommentService(CommentRepository commentRepository, TicketService ticketService, CommentMapper commentMapper) {
+    public CommentService(CommentRepository commentRepository, TicketService ticketService, CommentMapper commentMapper, UserService userService) {
         this.commentRepository = commentRepository;
+        this.userService = userService;
         this.ticketService = ticketService;
         this.commentMapper = commentMapper;
     }
@@ -35,7 +38,7 @@ public class CommentService {
                         .orElseThrow(() -> new ResourceNotFoundException("Ticket", "ticketId", ticketId));
 
         Comment comment = new Comment();
-        comment.setContent(commentDto.getContent());
+        comment.setContent(commentDto.content());
         comment.setTicket(ticket);
         Comment newComment = commentRepository.save(comment);
         
@@ -57,7 +60,10 @@ public class CommentService {
 
         Comment comment = commentRepository.findById(commentId)
                             .orElseThrow(()-> new ResourceNotFoundException("Comment", "commentId", commentId));
-                            
+        
+        if(!userService.getCurrentUser().getId().equals(comment.getAuthor().getId())){
+            throw new BusinessException("Bu yorumu sadece oluşturan kullanıcı silebilir!");
+        }
         commentRepository.deleteById(commentId);
     }
 

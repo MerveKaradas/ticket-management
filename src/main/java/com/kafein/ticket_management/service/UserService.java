@@ -6,7 +6,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -18,6 +21,8 @@ import com.kafein.ticket_management.dto.request.RequestCreateUserDto;
 import com.kafein.ticket_management.dto.request.RequestLoginDto;
 import com.kafein.ticket_management.dto.response.ResponseUserDto;
 import com.kafein.ticket_management.exception.ResourceNotFoundException;
+import com.kafein.ticket_management.exception.UnauthorizedException;
+import com.kafein.ticket_management.exception.UserAlreadyExistsException;
 import com.kafein.ticket_management.mapper.UserMapper;
 import com.kafein.ticket_management.model.User;
 import com.kafein.ticket_management.model.enums.Role;
@@ -27,7 +32,7 @@ import com.kafein.ticket_management.security.JwtUtil;
 import jakarta.transaction.Transactional;
 
 @Service
-public class UserService implements UserDetailsService {
+public class UserService implements UserDetailsService { 
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
@@ -51,11 +56,16 @@ public class UserService implements UserDetailsService {
     @Audit(action = "USER_CREATED")
     public ResponseUserDto createUser(RequestCreateUserDto requestCreateUserDto) {
 
+        if(userRepository.existsByEmail(requestCreateUserDto.email()))
+        {
+            throw new UserAlreadyExistsException();
+        }
+
         User user = User.builder()
-                .name(requestCreateUserDto.getName())
-                .surname(requestCreateUserDto.getSurname())
-                .email(requestCreateUserDto.getEmail())
-                .password(passwordEncoder.encode(requestCreateUserDto.getPassword()))
+                .name(requestCreateUserDto.name())
+                .surname(requestCreateUserDto.surname())
+                .email(requestCreateUserDto.email())
+                .password(passwordEncoder.encode(requestCreateUserDto.password()))
                 .build();
 
         userRepository.save(user);
@@ -67,8 +77,8 @@ public class UserService implements UserDetailsService {
     @Audit(action = "USER_LOGIN")
     public Map<String, String> login(RequestLoginDto requestLoginDto) {
         
-        User user = userRepository.findByEmail(requestLoginDto.getEmail())
-            .filter(u -> passwordEncoder.matches(requestLoginDto.getPassword(), u.getPassword()))
+        User user = userRepository.findByEmail(requestLoginDto.email())
+            .filter(u -> passwordEncoder.matches(requestLoginDto.password(), u.getPassword()))
             .orElseThrow(() -> new BadCredentialsException("Email veya şifre hatalı"));
             
         Map<String, String> tokens = new HashMap<>();
@@ -103,6 +113,10 @@ public class UserService implements UserDetailsService {
     }
 
     public List<ResponseUserDto> getAllUsers() {
+        if(!isAdmin()){
+            throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
+        }
+
         return userRepository.findAll()
                 .stream()
                 .filter(user -> user.getRole() == Role.USER)
@@ -111,8 +125,29 @@ public class UserService implements UserDetailsService {
     }
 
 
+    public User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+            throw new UnauthorizedException();
+        }
+
+        User currentUser = (User) authentication.getPrincipal();
+        return currentUser;
+    }
 
 
+    public boolean isAdmin() {
+        User currentUser = getCurrentUser();
+
+        boolean isAdmin = currentUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            return true;
+        }
+        return false;
+    }
 
 
 }
