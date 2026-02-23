@@ -9,6 +9,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.kafein.ticket_management.exception.CustomAccessDeniedHandler;
 import com.kafein.ticket_management.model.enums.Role;
 
 @Configuration
@@ -18,9 +19,11 @@ import com.kafein.ticket_management.model.enums.Role;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter, CustomAccessDeniedHandler customAccessDeniedHandler) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.customAccessDeniedHandler = customAccessDeniedHandler;
     }
 
     @Bean
@@ -28,8 +31,9 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(e -> e.accessDeniedHandler(customAccessDeniedHandler)) // Security seviyesinde bulunan denetim için özel bir exception classı
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/users/login", "/api/users/createUser").permitAll()
+                        .requestMatchers("/api/users/login", "/api/users/createUser").anonymous() // Giriş yapmamış kullanıcılar için
                         .requestMatchers("/v3/api-docs", 
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
