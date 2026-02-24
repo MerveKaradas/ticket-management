@@ -1,6 +1,8 @@
 package com.kafein.ticket_management.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -179,6 +181,33 @@ public class TicketService {
 
     }
 
-   
+    public Long totalTicketCount() {
+        return ticketRepository.count();
+    }
+
+    public Map<TicketStatus, Long> getEachStatusTotalTicketsCount() {
+        List<Object[]> results = ticketRepository.countTicketsByStatusRaw();
+        Map<TicketStatus, Long> statusMap = new HashMap<>();
+
+        // Default olarak statü bulunmayanları da koruma altında alıyoruz özellikle UI kullanımında önemli
+        for (TicketStatus status : TicketStatus.values()) {
+            statusMap.put(status, 0L);
+        }
+
+        for (Object[] result : results) {
+            TicketStatus status = (TicketStatus) result[0];
+            Long count = (Long) result[1];
+            statusMap.put(status, count);
+        }
+
+        return statusMap;
+    }
+
+    public List<ResponseTicketDto> getLast5Tickets() {
+        return ticketRepository.findTop5ByOrderByCreatedAtDateDesc()
+                .stream()
+                .map((ticket) -> ticketMapper.toDto(ticket))
+                .toList();
+    }
 
 }
