@@ -89,7 +89,15 @@ public class TicketService {
     @Transactional
     @Audit(action = "TICKET_DELETE")
     public void deleteTicketById(UUID id) {
-        ticketRepository.deleteById(id);
+
+        if (userService.isAdmin()) {
+            if (!ticketRepository.existsById(id)) {
+                throw new ResourceNotFoundException("Ticket", "id", id);
+            }
+            ticketRepository.deleteById(id);
+        } else {
+            throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
+        }
     }
 
     public Page<ResponseTicketDto> filterTickets(TicketStatus status, TicketPriority priority,
@@ -125,12 +133,7 @@ public class TicketService {
 
         if (ticket.getAssignedTo().getId().equals(userService.getCurrentUser().getId())) {
 
-            // Statü geçişi geçerli mi kontrolü
-            boolean isValidTransition = (ticket.getStatus() == TicketStatus.OPEN && status == TicketStatus.IN_PROGRESS)
-                    ||
-                    (ticket.getStatus() == TicketStatus.IN_PROGRESS && status == TicketStatus.DONE);
-
-            if (!isValidTransition) {
+            if (!isValidTransition(ticket.getStatus(), status)) {
                 throw new BusinessException("Geçersiz statü geçişi!");
             }
 
@@ -142,21 +145,21 @@ public class TicketService {
         }
     }
 
-    @Transactional // TODO : İŞ KURALLARINI GELİŞTİR
+    private boolean isValidTransition(TicketStatus ticketStatus, TicketStatus requestStatus) {
+        return (ticketStatus == TicketStatus.REOPENED && requestStatus == TicketStatus.IN_PROGRESS)
+                || (ticketStatus == TicketStatus.OPEN && requestStatus == TicketStatus.IN_PROGRESS)
+                ||
+                (ticketStatus == TicketStatus.IN_PROGRESS && requestStatus == TicketStatus.DONE);
+
+    }
+
+    @Transactional
     @Audit(action = "TICKET_UPDATE")
     public ResponseTicketDto updateTicket(UUID ticketId, RequestTicketDto requestTicketDto) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
         if (ticket.getCreatedBy().getId().equals(userService.getCurrentUser().getId())) {
-
-            ticket.setTitle(requestTicketDto.title());
-            ticket.setDescription(requestTicketDto.description());
-            ticket.setPriority(requestTicketDto.priority());
-
-            if (requestTicketDto.status() != null && !ticket.getStatus().equals(requestTicketDto.status())) {
-                ticket.setStatus(updateTicketStatus(ticketId, requestTicketDto.status()).status());
-            }
 
             if (requestTicketDto.assignedToId() != null) {
 
@@ -166,14 +169,31 @@ public class TicketService {
 
                 ticket.setAssignedTo(newAssignee);
 
-            }
+                if (ticket.getStatus() == TicketStatus.DONE) {
+                    ticket.setStatus(TicketStatus.REOPENED);
+                } else {
+                    if (requestTicketDto.status() != null && !ticket.getStatus().equals(requestTicketDto.status())) {
+                        if (!isValidTransition(ticket.getStatus(), requestTicketDto.status())) {
+                            throw new BusinessException("Geçersiz statü geçişi!");
+                        } else {
+                            ticket.setStatus(requestTicketDto.status());
+                        }
+                    }
+                }
+
+            } 
 
         } else {
             throw new BusinessException("Bu bileti sadece oluşturan kullanıcı güncelleyebilir!");
         }
 
-        return ticketMapper.toDto(ticketRepository.save(ticket));
+        ticket.setTitle(requestTicketDto.title());
+        ticket.setDescription(requestTicketDto.description());
+        ticket.setPriority(requestTicketDto.priority());
 
+        ticketRepository.save(ticket);
+
+        return ticketMapper.toDto(ticket);
     }
 
     public Optional<Ticket> getTicketById(UUID ticketId) {
@@ -189,7 +209,8 @@ public class TicketService {
         List<Object[]> results = ticketRepository.countTicketsByStatusRaw();
         Map<TicketStatus, Long> statusMap = new HashMap<>();
 
-        // Default olarak statü bulunmayanları da koruma altında alıyoruz özellikle UI kullanımında önemli
+        // Default olarak statü bulunmayanları da koruma altında alıyoruz özellikle UI
+        // kullanımında önemli
         for (TicketStatus status : TicketStatus.values()) {
             statusMap.put(status, 0L);
         }
