@@ -5,6 +5,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,11 +20,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 
 import com.kafein.ticket_management.dto.request.RequestCreateTicketDto;
 import com.kafein.ticket_management.dto.request.RequestTicketDto;
 import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
+import com.kafein.ticket_management.dto.response.ResponseTicketDto;
 import com.kafein.ticket_management.exception.BusinessException;
 import com.kafein.ticket_management.exception.ResourceNotFoundException;
 import com.kafein.ticket_management.mapper.TicketMapper;
@@ -220,7 +227,7 @@ public class TicketServiceTest {
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
         TicketStatus status = TicketStatus.DONE;
-        
+
         Ticket ticket = Ticket.builder()
                 .id(ticketId)
                 .status(status)
@@ -274,7 +281,7 @@ public class TicketServiceTest {
         User assignee = createUser(assigneeId);
         User currentUser = assignee;
         TicketStatus status = TicketStatus.DONE;
-        
+
         Ticket ticket = Ticket.builder()
                 .id(ticketId)
                 .assignedTo(assignee)
@@ -295,30 +302,29 @@ public class TicketServiceTest {
 
     // @Test
     // void updateStatus_ToInProgress_ShouldSucceed() {
-    //     // ARRANGE
-    //     UUID ticketId = UUID.randomUUID();
-    //     UUID assignedToUserId = UUID.randomUUID();
-    //     User assignedToUser = createUser(assignedToUserId);
-    //     User currentUser = createUser(assignedToUserId);
-    //     TicketStatus status = TicketStatus.IN_PROGRESS;
-    //     Ticket ticket = Ticket.builder()
-    //             .id(ticketId)
-    //             .assignedTo(assignedToUser)
-    //             .status(TicketStatus.OPEN)
-    //             .build();
+    // // ARRANGE
+    // UUID ticketId = UUID.randomUUID();
+    // UUID assignedToUserId = UUID.randomUUID();
+    // User assignedToUser = createUser(assignedToUserId);
+    // User currentUser = createUser(assignedToUserId);
+    // TicketStatus status = TicketStatus.IN_PROGRESS;
+    // Ticket ticket = Ticket.builder()
+    // .id(ticketId)
+    // .assignedTo(assignedToUser)
+    // .status(TicketStatus.OPEN)
+    // .build();
 
-    //     given(ticketRepository.findById(ticketId)).willReturn(Optional.of(ticket));
-    //     given(userService.getCurrentUser()).willReturn(currentUser);
+    // given(ticketRepository.findById(ticketId)).willReturn(Optional.of(ticket));
+    // given(userService.getCurrentUser()).willReturn(currentUser);
 
-    //     // ACT
-    //     ticketService.updateTicketStatus(ticketId, status);
+    // // ACT
+    // ticketService.updateTicketStatus(ticketId, status);
 
-    //     // ASSERT
-    //     verify(ticketRepository, times(1)).save(any(Ticket.class));
+    // // ASSERT
+    // verify(ticketRepository, times(1)).save(any(Ticket.class));
 
     // }
 
-    
     @ParameterizedTest
     @CsvSource({
             "OPEN, IN_PROGRESS",
@@ -434,7 +440,7 @@ public class TicketServiceTest {
         UUID ticketId = UUID.randomUUID();
         UUID currentUserId = UUID.randomUUID();
         UUID oldAssigneeId = UUID.randomUUID();
-       
+
         User oldAssignee = createUser(oldAssigneeId);
         User currentUser = createUser(currentUserId);
 
@@ -652,6 +658,79 @@ public class TicketServiceTest {
         assertEquals(expectedCount, result);
         verify(ticketRepository, times(1)).count();
 
+    }
+
+    @DisplayName("Tüm statüler için bilet sayıları (boş olanlar dahil 0 olarak) doğru dönmelidir")
+    @Test
+    void getEachStatusTotalTicketsCount_ShouldReturnMapWithAllStatuses() {
+        // ARRANGE
+        List<Object[]> mockResults = List.of(
+                new Object[] { TicketStatus.OPEN, 5L },
+                new Object[] { TicketStatus.IN_PROGRESS, 2L });
+        given(ticketRepository.countTicketsByStatusRaw()).willReturn(mockResults);
+
+        // ACT
+        Map<TicketStatus, Long> result = ticketService.getEachStatusTotalTicketsCount();
+
+        // ASSERT
+        assertEquals(5L, result.get(TicketStatus.OPEN));
+        assertEquals(2L, result.get(TicketStatus.IN_PROGRESS));
+        assertEquals(0L, result.get(TicketStatus.DONE)); // Veritabanında yok ama Map'te 0 olmalı
+        assertEquals(TicketStatus.values().length, result.size());
+    }
+
+    @Test
+    void getLast5Tickets_WhenListEmpty() {
+
+        List<Ticket> list = List.of();
+        given(ticketRepository.findTop5ByOrderByCreatedAtDateDesc()).willReturn(list);
+
+        ticketService.getLast5Tickets();
+
+        verify(ticketMapper, times(0)).toDto(any(Ticket.class));
+    }
+
+    @DisplayName("Son oluşturulan 5 bilet oluşturulma tarihine göre listelenmelidir.")
+    @Test
+    void getLast5Tickets() {
+
+        User user = createUser(UUID.randomUUID());
+        Ticket ticket = Ticket.builder()
+                .title("title")
+                .description("description")
+                .priority(TicketPriority.LOW)
+                .assignedTo(user)
+                .build();
+        List<Ticket> list = List.of(ticket);
+        given(ticketRepository.findTop5ByOrderByCreatedAtDateDesc()).willReturn(list);
+
+        ticketService.getLast5Tickets();
+
+        verify(ticketMapper, times(1)).toDto(any(Ticket.class));
+    }
+
+    @Test
+    void filterTickets_WithValidCriteria_ShouldReturnPagedTickets() {
+        // ARRANGE
+        TicketStatus status = TicketStatus.OPEN;
+        TicketPriority priority = TicketPriority.MEDIUM;
+        UUID assignedToId = UUID.randomUUID();
+        int page = 0;
+        int size = 10;
+
+        Ticket ticket = Ticket.builder().title("Filtrelenmiş Bilet").build();
+        List<Ticket> ticketList = List.of(ticket);
+        Page<Ticket> ticketPage = new PageImpl<>(ticketList); 
+
+        given(ticketRepository.findAll(any(Specification.class), any(Pageable.class))).willReturn(ticketPage);
+
+        // ACT
+        Page<ResponseTicketDto> result = ticketService.filterTickets(status, priority, assignedToId, page, size);
+
+        // ASSERT
+        assertEquals(1, result.getTotalElements());
+        assertEquals("Filtrelenmiş Bilet", result.getContent().get(0).title());
+        verify(ticketRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
     }
 
     private Ticket createTicket(User user, RequestCreateTicketDto requestCreateTicketDto) {
