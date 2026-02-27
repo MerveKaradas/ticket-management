@@ -110,8 +110,8 @@ public class UserService implements UserDetailsService {
 
     }
 
-    public Optional<User> getUserById(UUID assignedToId) {
-        return userRepository.findById(assignedToId);
+    public Optional<User> getUserById(UUID userId) {
+        return userRepository.findById(userId);
     }
 
     @Transactional
