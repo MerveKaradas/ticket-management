@@ -1,12 +1,12 @@
 package com.kafein.ticket_management.service;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,7 +30,7 @@ public class RefreshTokenTest {
     private RefreshTokenService refreshTokenService;
 
     @Test
-    void saveRefreshToken(){
+    void saveRefreshToken_validRequest_shouldSaveToDatabase(){
 
         UUID userId =  UUID.randomUUID();
         String refreshTokenString = "myRefreshToken";
@@ -41,15 +41,14 @@ public class RefreshTokenTest {
     }
 
     @Test
-    void revokeRefreshToken(){
-        UUID userId = UUID.randomUUID();
-        User user = User.builder().id(userId).build(); 
+    void revokeRefreshToken_tokenExists_shouldDeleteTokenFromDatabase(){
+        String currentRefreshToken = "My_refresh_token";
         RefreshToken refreshToken = new RefreshToken();
-
-        given(refreshTokenRepository.findByUserId(userId)).willReturn(Optional.of(refreshToken));
+      
+        given(refreshTokenRepository.findByToken(currentRefreshToken)).willReturn(Optional.of(refreshToken));
  
         // ACT
-        refreshTokenService.revokeRefreshToken(user);
+        refreshTokenService.revokeRefreshToken(currentRefreshToken);
 
         // ASSERT
         verify(refreshTokenRepository, times(1)).delete(refreshToken);
@@ -57,20 +56,47 @@ public class RefreshTokenTest {
     }
 
     @Test
-    void revokeRefreshToken1(){
-        UUID userId = UUID.randomUUID();
-        User user = User.builder().id(UUID.randomUUID()).build(); 
-        RefreshToken refreshToken = new RefreshToken();
-
-        given(refreshTokenRepository.findByUserId(userId)).willReturn(Optional.empty());
+    void revokeRefreshToken_tokenDoesNotExist_shouldNotAttemptDeletion(){
+        String currentRefreshToken = "My_refresh_token";
+        given(refreshTokenRepository.findByToken(currentRefreshToken)).willReturn(Optional.empty());
  
         // ACT
-        assertThrows(RuntimeException.class, ()->{
-            refreshTokenService.revokeRefreshToken(user);
-        });
+        refreshTokenService.revokeRefreshToken(currentRefreshToken);
         
         // ASSERT
-        verify(refreshTokenRepository, never()).delete(refreshToken);
+        verify(refreshTokenRepository, never()).delete(any(RefreshToken.class));
+
+    }
+
+    @Test
+    void revokeAllRefreshToken_userHasNoTokens_shouldNotPerformAnyDeletion(){
+        // ARRANGE
+        User user = User.builder().id(UUID.randomUUID()).build();
+        List<RefreshToken> list = List.of();
+
+        given(refreshTokenRepository.findByUserId(user.getId())).willReturn(list);
+
+         // ACT
+        refreshTokenService.revokeAllRefreshToken(user);
+        
+        // ASSERT
+        verify(refreshTokenRepository, never()).delete(any(RefreshToken.class));
+
+    }
+
+    @Test
+    void revokeAllRefreshToken_userHasMultipleTokens_shouldDeleteAllUserTokens(){
+        // ARRANGE
+        User user = User.builder().id(UUID.randomUUID()).build();
+        List<RefreshToken> list = List.of(RefreshToken.builder().id(1001L).build());
+
+        given(refreshTokenRepository.findByUserId(user.getId())).willReturn(list);
+
+         // ACT
+        refreshTokenService.revokeAllRefreshToken(user);
+        
+        // ASSERT
+        verify(refreshTokenRepository, times(list.size())).delete(any(RefreshToken.class));
 
     }
     

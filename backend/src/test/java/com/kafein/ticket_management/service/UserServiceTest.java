@@ -199,8 +199,8 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("Kullanıcı oturumu açıkken logout yapıldığında refresh token iptal edilmelidir")
-    void logout_WhenUserAuthenticated_ShouldRevokeToken() {
+    @DisplayName("Kullanıcı oturumu açıkken logoutAll yapıldığında tüm refresh tokenleri iptal edilmelidir")
+    void logoutAll_WhenUserAuthenticated_ShouldRevokeToken() {
         // ARRANGE
         User user = User.builder().email("merve@kafein.com").build();
         Authentication auth = mock(Authentication.class);
@@ -213,16 +213,16 @@ public class UserServiceTest {
             given(auth.getPrincipal()).willReturn(user);
 
             // ACT
-            userService.logout();
+            userService.logoutAll();
 
             // ASSERT
-            verify(refreshTokenService, times(1)).revokeRefreshToken(user);
+            verify(refreshTokenService, times(1)).revokeAllRefreshToken(user);
         }
     }
 
     @Test
-    @DisplayName("Oturum açılmamışken logout yapılmaya çalışıldığında UnauthorizedException fırlatılmalıdır")
-    void logout_WhenNotAuthenticated_ShouldThrowUnauthorizedException() {
+    @DisplayName("Oturum açılmamışken logoutAll yapılmaya çalışıldığında UnauthorizedException fırlatılmalıdır")
+    void logoutAll_WhenNotAuthenticated_ShouldThrowUnauthorizedException() {
         // ARRANGE
         SecurityContext securityContext = mock(SecurityContext.class);
 
@@ -231,7 +231,47 @@ public class UserServiceTest {
             given(securityContext.getAuthentication()).willReturn(null); // Auth yok
 
             // ACT ve ASSERT
-            assertThrows(UnauthorizedException.class, () -> userService.logout());
+            assertThrows(UnauthorizedException.class, () -> userService.logoutAll());
+            verifyNoInteractions(refreshTokenService);
+        }
+    }
+
+    @Test
+    @DisplayName("Kullanıcı oturumu açıkken logout yapıldığında mevcut refresh token iptal edilmelidir")
+    void logout_WhenUserAuthenticated_ShouldRevokeToken() {
+        // ARRANGE
+        String currentRefreshToken = "Myrefreshtoken";
+        User user = User.builder().email("merve@kafein.com").build();
+        Authentication auth = mock(Authentication.class);
+        SecurityContext securityContext = mock(SecurityContext.class);
+
+        // SecurityContextHolder'ı statik olarak mock'luyoruz
+        try (MockedStatic<SecurityContextHolder> mockedSecurity = mockStatic(SecurityContextHolder.class)) {
+            mockedSecurity.when(SecurityContextHolder::getContext).thenReturn(securityContext);
+            given(securityContext.getAuthentication()).willReturn(auth);
+            given(auth.getPrincipal()).willReturn(user);
+
+            // ACT
+            userService.logout(currentRefreshToken);
+
+            // ASSERT
+            verify(refreshTokenService, times(1)).revokeRefreshToken(currentRefreshToken);
+        }
+    }
+
+    @Test
+    @DisplayName("Oturum açılmamışken logout yapılmaya çalışıldığında UnauthorizedException fırlatılmalıdır")
+    void logout_WhenNotAuthenticated_ShouldThrowUnauthorizedException() {
+        // ARRANGE
+        String currentRefreshToken = "Myrefreshtoken";
+        SecurityContext securityContext = mock(SecurityContext.class);
+
+        try (MockedStatic<SecurityContextHolder> mockedSecurity = mockStatic(SecurityContextHolder.class)) {
+            mockedSecurity.when(SecurityContextHolder::getContext).thenReturn(securityContext);
+            given(securityContext.getAuthentication()).willReturn(null); // Auth yok
+
+            // ACT ve ASSERT
+            assertThrows(UnauthorizedException.class, () -> userService.logout(currentRefreshToken));
             verifyNoInteractions(refreshTokenService);
         }
     }
