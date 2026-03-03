@@ -5,10 +5,12 @@ import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kafein.ticket_management.dto.request.RequestCreateUserDto;
@@ -20,7 +22,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-@Tag(name = "User API", description = "User register, login ve listeleme işlemleri")
+@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*", methods = {RequestMethod.POST, RequestMethod.OPTIONS})
+@Tag(name = "User API", description = "User için Register, Login ve Listeleme İşlemleri")
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -45,10 +48,17 @@ public class UserController {
         return ResponseEntity.ok(userService.login(requestLoginDto));
     }
 
-    @Operation(summary = "Sistemden Çıkış", description = "Oturum açmış kullanıcının oturumu sonlandırılır")
+    @Operation(summary = "Mevcut Oturumu Sonlandırma", description = "Kullanıcının oturum açtığı cihaz oturumu sonlandırılır")
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
-        userService.logout();
+    public ResponseEntity<Void> logout(String currentRefreshToken) {
+        userService.logout(currentRefreshToken);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Tüm Oturumları Sonlandırma", description = "Kullanıcının oturum açtığı tüm cihazlardaki oturumları sonlandırılır")
+    @PostMapping("/logoutAll")
+    public ResponseEntity<Void> logoutAll() {
+        userService.logoutAll();
         return ResponseEntity.ok().build();
     }
 

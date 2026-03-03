@@ -99,11 +99,23 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public void logout() {
+    public void logout(String currentRefreshToken) {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User) {
+            refreshTokenService.revokeRefreshToken(currentRefreshToken);
+        } else {
+            throw new UnauthorizedException();
+        }
+
+    }
+
+    @Transactional
+    public void logoutAll() {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof User user) {
-            refreshTokenService.revokeRefreshToken(user);
+            refreshTokenService.revokeAllRefreshToken(user);
         } else {
             throw new UnauthorizedException();
         }
