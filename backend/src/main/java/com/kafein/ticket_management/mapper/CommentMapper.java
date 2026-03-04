@@ -13,6 +13,7 @@ public interface CommentMapper {
 
     @Mapping(source = "ticket.id", target = "ticketId")
     @Mapping(source = "author.id", target = "authorId")
+    @Mapping(target = "fullName", expression = "java(comment.getAuthor().getName() + \" \" + comment.getAuthor().getSurname())")
     ResponseCommentDto toDto(Comment comment);
 
     List<ResponseCommentDto> toDtoList(List<Comment> comments);

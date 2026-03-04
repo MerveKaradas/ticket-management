@@ -34,7 +34,7 @@ public class CommentController {
     }
 
     @Operation(summary = "Yeni Yorum Ekleme", description = "Herhangi bir kullanıcı bilete yorum ekleyebilir.")
-    @PostMapping("/{ticketId}/comments")
+    @PostMapping("/{ticketId}/comment")
     public ResponseEntity<ResponseCommentDto> addComment(@PathVariable UUID ticketId,
             @RequestBody @Valid RequestCommentDto commentDto) {
         return ResponseEntity.ok(commentService.addComment(ticketId, commentDto));

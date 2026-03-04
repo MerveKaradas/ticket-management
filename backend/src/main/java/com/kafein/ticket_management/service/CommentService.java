@@ -50,7 +50,7 @@ public class CommentService {
         Ticket ticket = ticketService.getTicketById(ticketId)
                         .orElseThrow(() -> new ResourceNotFoundException("Ticket", "ticketId", ticketId));
 
-        List<Comment> comments = commentRepository.findAllByTicket(ticket);
+        List<Comment> comments = commentRepository.findAllByTicketOrderByCreatedAtDesc(ticket);
         return commentMapper.toDtoList(comments);
     }
 

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import com.kafein.ticket_management.aop.Audit;
 import com.kafein.ticket_management.dto.request.RequestCreateTicketDto;
 import com.kafein.ticket_management.dto.request.RequestTicketDto;
+import com.kafein.ticket_management.dto.request.TicketStatusUpdateRequestDto;
 import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
 import com.kafein.ticket_management.dto.response.ResponseTicketDto;
 import com.kafein.ticket_management.exception.BusinessException;
@@ -65,15 +66,10 @@ public class TicketService {
     }
 
     public List<ResponseTicketDto> getAllTickets() {
-
-        if (userService.isAdmin()) {
-            return ticketRepository.findAll()
+         return ticketRepository.findAll()
                     .stream()
                     .map((ticket) -> ticketMapper.toDto(ticket))
                     .toList();
-        } else {
-            throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
-        }
     }
 
     @Transactional
@@ -122,22 +118,19 @@ public class TicketService {
 
     @Transactional
     @Audit(action = "TICKET_UPDATE_STATUS")
-    public ResponseTicketDto updateTicketStatus(UUID ticketId, TicketStatus status) {
+    public ResponseTicketDto updateTicketStatus(UUID ticketId, TicketStatusUpdateRequestDto requestStatusDto) {
 
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
 
-        if (ticket.getStatus() == TicketStatus.DONE) {
-            throw new BusinessException("Kapanmış bir biletin durumunu değiştiremezsiniz!");
-        }
 
         if (ticket.getAssignedTo().getId().equals(userService.getCurrentUser().getId())) {
 
-            if (!isValidTransition(ticket.getStatus(), status)) {
+            if (!isValidTransition(ticket.getStatus(),requestStatusDto.status())) {
                 throw new BusinessException("Geçersiz statü geçişi!");
             }
 
-            ticket.setStatus(status);
+            ticket.setStatus(requestStatusDto.status());
             ticketRepository.save(ticket);
             return ticketMapper.toDto(ticket);
         } else {
@@ -148,8 +141,8 @@ public class TicketService {
     private boolean isValidTransition(TicketStatus ticketStatus, TicketStatus requestStatus) {
         return (ticketStatus == TicketStatus.REOPENED && requestStatus == TicketStatus.IN_PROGRESS)
                 || (ticketStatus == TicketStatus.OPEN && requestStatus == TicketStatus.IN_PROGRESS)
-                ||
-                (ticketStatus == TicketStatus.IN_PROGRESS && requestStatus == TicketStatus.DONE);
+                || (ticketStatus == TicketStatus.IN_PROGRESS && requestStatus == TicketStatus.DONE)
+                || (ticketStatus == TicketStatus.DONE && requestStatus == TicketStatus.REOPENED);
 
     }
 

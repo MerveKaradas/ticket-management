@@ -10,6 +10,6 @@ import com.kafein.ticket_management.model.Ticket;
 
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
-    List<Comment> findAllByTicket(Ticket ticket);
+    List<Comment> findAllByTicketOrderByCreatedAtDesc(Ticket ticket);
     
 }

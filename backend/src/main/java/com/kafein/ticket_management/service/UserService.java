@@ -20,6 +20,7 @@ import com.kafein.ticket_management.aop.Audit;
 import com.kafein.ticket_management.dto.request.RequestCreateUserDto;
 import com.kafein.ticket_management.dto.request.RequestLoginDto;
 import com.kafein.ticket_management.dto.response.ResponseUserDto;
+import com.kafein.ticket_management.dto.response.ResponseUserForAssignmentDto;
 import com.kafein.ticket_management.exception.ResourceNotFoundException;
 import com.kafein.ticket_management.exception.UnauthorizedException;
 import com.kafein.ticket_management.exception.UserAlreadyExistsException;
@@ -174,6 +175,19 @@ public class UserService implements UserDetailsService {
             return true;
         }
         return false;
+    }
+
+    public List<ResponseUserForAssignmentDto> getAllUsersForAssignment() {
+        return userRepository.findAll()
+                .stream()
+                .filter(user -> user.getRole() == Role.USER)
+                .map(user -> userMapper.toUserForAssignmentDto(user))
+                .toList();
+    }
+
+    public ResponseUserDto getUser() {
+        return userMapper.toDto(getCurrentUser());
+        
     }
 
 }
