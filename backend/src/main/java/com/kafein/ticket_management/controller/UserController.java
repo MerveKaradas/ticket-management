@@ -50,7 +50,7 @@ public class UserController {
     }
 
     @Operation(summary = "Mevcut Oturumu Sonlandırma", description = "Kullanıcının oturum açtığı cihaz oturumu sonlandırılır")
-    @PostMapping("/logout")
+    @PostMapping("/logout") // TODO : Düzenlenecek
     public ResponseEntity<Void> logout(String currentRefreshToken) {
         userService.logout(currentRefreshToken);
         return ResponseEntity.ok().build();

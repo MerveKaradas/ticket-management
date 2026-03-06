@@ -66,10 +66,10 @@ public class TicketService {
     }
 
     public List<ResponseTicketDto> getAllTickets() {
-         return ticketRepository.findAll()
-                    .stream()
-                    .map((ticket) -> ticketMapper.toDto(ticket))
-                    .toList();
+        return ticketRepository.findAll()
+                .stream()
+                .map((ticket) -> ticketMapper.toDto(ticket))
+                .toList();
     }
 
     @Transactional
@@ -96,13 +96,16 @@ public class TicketService {
         }
     }
 
-    public Page<ResponseTicketDto> filterTickets(TicketStatus status, TicketPriority priority,
+    public Page<ResponseTicketDto> filterTickets(String title, TicketStatus status, TicketPriority priority,
             UUID assignedToId, int page, int size) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdBy").descending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAtDate").descending()); // nesne kullanma
 
-        // Dinamik sorgu oluşturma
-        Specification<Ticket> spec = Specification.where((root, query, cb) -> cb.conjunction());
+        Specification<Ticket> spec = Specification.where(null);
+
+        if (title != null && !title.trim().isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("title")), "%" + title.toLowerCase() + "%"));
+        }
         if (status != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
         }
@@ -112,8 +115,8 @@ public class TicketService {
         if (assignedToId != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("assignedTo").get("id"), assignedToId));
         }
-        return ticketRepository.findAll(spec, pageable)
-                .map(ticketMapper::toDto);
+
+        return ticketRepository.findAll(spec, pageable).map(ticketMapper::toDto);
     }
 
     @Transactional
@@ -122,7 +125,6 @@ public class TicketService {
 
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
-
 
         if (ticket.getAssignedTo().getId().equals(userService.getCurrentUser().getId())) {
 
@@ -174,7 +176,7 @@ public class TicketService {
                     }
                 }
 
-            } 
+            }
 
         } else {
             throw new BusinessException("Bu bileti sadece oluşturan kullanıcı güncelleyebilir!");

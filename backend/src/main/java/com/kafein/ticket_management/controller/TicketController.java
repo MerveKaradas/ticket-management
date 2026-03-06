@@ -92,15 +92,16 @@ public class TicketController {
     
     @Operation(summary = "Biletleri Filtreleyerek Listeleme", 
                 description = "Filtreleme seçeneklerine uygun olan biletler listelenir.")
-    @GetMapping("/filter") // TODO : page ve size değerlerini kontrol et
+    @GetMapping("/filter") 
     public ResponseEntity<Page<ResponseTicketDto>> filterTickets(
+        @RequestParam(required = false) String title,
         @RequestParam(required = false) TicketStatus status,
         @RequestParam(required = false) TicketPriority priority,
         @RequestParam(required = false) UUID assignedToId ,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(ticketService.filterTickets(status, priority, assignedToId, page, size));
+        return ResponseEntity.ok(ticketService.filterTickets(title, status, priority, assignedToId, page, size));
     }
 
     @Operation(summary = "Bilet Durumunu Güncelleme (Statü Geçişi)", 

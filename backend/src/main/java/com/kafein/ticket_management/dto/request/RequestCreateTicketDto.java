@@ -17,7 +17,7 @@ public record RequestCreateTicketDto(
     String title,
 
     @Schema(example = "Bilete uygun olarak açıklamayı oluşturmalısınız.")
-    @Size(max = 2000, message = "Açıklama çok uzun")
+    @Size(min =3, max = 2000, message = "Açıklama 3-2000 karakter arasında olmalıdır")
     String description,
 
     @Schema(example = "LOW")
