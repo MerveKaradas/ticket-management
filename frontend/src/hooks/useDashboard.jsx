@@ -36,8 +36,8 @@ export const useDashboard = (currentUserId) => {
 
     if (activeFilter === 'MY_TICKETS') {
       result = result.filter(t => t.assignedTo?.id === currentUserId);
-    } else if (activeFilter === 'URGENT') {
-      result = result.filter(t => t.priority === 'URGENT' || t.priority === 'HIGH');
+    } else if (activeFilter === 'HIGH') {
+      result = result.filter(t => t.priority === 'HIGH');
     }
 
     return result;
@@ -47,8 +47,8 @@ export const useDashboard = (currentUserId) => {
   const stats = useMemo(() => {
     const total = tickets.length;
     const active = tickets.filter(t => ['OPEN', 'REOPENED', 'IN_PROGRESS'].includes(t.status)).length;
-    const urgent = tickets.filter(t => t.priority === 'URGENT' || t.priority === 'HIGH').length;
-    const completed = tickets.filter(t => t.status === 'COMPLETED' || t.status === 'CLOSED').length;
+    const urgent = tickets.filter(t => t.priority === 'HIGH').length;
+    const completed = tickets.filter(t => t.status === 'DONE').length;
     
     return {
       total,

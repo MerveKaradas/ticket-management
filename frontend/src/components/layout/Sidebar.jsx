@@ -1,5 +1,5 @@
 const Sidebar = ({ isOpen, setIsOpen }) => {
-  const menuItems = ['Statistics', 'Reports', 'Issues', 'Settings'];
+  const menuItems = ['Dashboard', 'Board', 'Reports', 'Settings'];
 
   return (
     <aside className={`${isOpen ? 'w-64' : 'w-20'} bg-[#0747A6] text-white transition-all duration-300 flex flex-col relative shrink-0`}>

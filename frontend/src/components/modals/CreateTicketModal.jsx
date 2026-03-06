@@ -46,7 +46,7 @@ const CreateTicketModal = ({ isOpen, onClose, refreshTickets }) => {
                 if (refreshTickets) refreshTickets(); // TODO : KONTROL ET
             }
         } catch (err) {
-            console.error("Bilet oluşturma hatası:", err);
+            console.error("Bilet oluşturma hatası:", err.response?.data);
         }
     };
 
