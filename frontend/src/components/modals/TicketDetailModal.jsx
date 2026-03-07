@@ -1,45 +1,73 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Api from '../../services/Api';
 import { toast } from 'react-toastify';
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 
-const TicketDetailModal = ({ currentUser, ticket, onClose, refreshTickets }) => {
-    
-    const [ticketData, setTicketData] = useState(ticket);
+const TicketDetailModal = () => {
+    const { ticketId } = useParams();
+    const [ticketData, setTicketData] = useState(null); 
     const [comments, setComments] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
     const [users, setUsers] = useState([]);
 
-    
-    const [editedTitle, setEditedTitle] = useState(ticket.title);
-    const [editedDescription, setEditedDescription] = useState(ticket.description);
-    const [editedStatus, setEditedStatus] = useState(ticket.status);
-    const [editedPriority, setEditedPriority] = useState(ticket.priority);
-    const [editedAssignedToId, setEditedAssignedToId] = useState(ticket.assignedTo?.id || '');
+    const [editedTitle, setEditedTitle] = useState("");
+    const [editedDescription, setEditedDescription] = useState("");
+    const [editedStatus, setEditedStatus] = useState("");
+    const [editedPriority, setEditedPriority] = useState("");
+    const [editedAssignedToId, setEditedAssignedToId] = useState("");
 
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
     const [newComment, setNewComment] = useState('');
+    const { currentUser, refreshTickets } = useOutletContext();
 
-    if (!ticketData) return null;
+    const navigate = useNavigate();
+    const onClose = () => navigate('/board');
 
-    const isCreator = currentUser?.id === ticketData.createdBy?.id;
-    const isAssignee = currentUser?.id === ticketData.assignedTo?.id;
-    const canEdit = isCreator || isAssignee;
+    // URLdeki ID değiştikçe tetiklenir
+    useEffect(() => {
+        const fetchTicket = async () => {
+            try {
+                const response = await Api.get(`/tickets/getTicket/${ticketId}`);
+                const data = response.data;
+                setTicketData(data);
 
-    
+                setEditedTitle(data.title);
+                setEditedDescription(data.description);
+                setEditedStatus(data.status);
+                setEditedPriority(data.priority);
+                setEditedAssignedToId(data.assignedTo?.id || '');
+            } catch (err) {
+                toast.error("Bilet yüklenemedi.");
+            }
+        };
+        fetchTicket();
+    }, [ticketId]);
+
+    // Yorumlar
     const fetchLatestData = useCallback(async () => {
+        if (!ticketData?.id) return;
         try {
-           
             const commentsRes = await Api.get(`/comments/${ticketData.id}`);
             setComments(commentsRes.data || []);
-
         } catch (err) {
-            console.error("Veri yenileme hatası:", err);
+            console.error("Yorum hatası:", err);
         }
-    }, [ticketData.id]);
+    }, [ticketData?.id]);
 
     useEffect(() => {
         fetchLatestData();
     }, [fetchLatestData]);
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const response = await Api.get('/users/listForAssignment');
+                setUsers(response.data || []);
+            } catch (err) { console.error(err); }
+        };
+        if (isEditing && isCreator) fetchUsers();
+    }, [isEditing]);
+
 
     const handleAddComment = async () => {
         if (!newComment.trim()) return;
@@ -50,14 +78,14 @@ const TicketDetailModal = ({ currentUser, ticket, onClose, refreshTickets }) => 
             if (response.status === 200 || response.status === 201) {
                 toast.success("Yorum eklendi! ✨");
                 setNewComment('');
-                fetchLatestData(); 
-                if (refreshTickets) refreshTickets(); 
+                fetchLatestData();
+                if (refreshTickets) refreshTickets();
             }
         } catch (err) {
             toast.error("Yorum gönderilemedi.");
         }
     };
-  
+
     const handleConfirmDelete = async (commentId) => {
         try {
             const response = await Api.delete(`/comments/${commentId}`);
@@ -70,6 +98,22 @@ const TicketDetailModal = ({ currentUser, ticket, onClose, refreshTickets }) => 
             toast.error("Silme yetkiniz yok.");
         }
     };
+
+    if (!ticketData) {
+        return (
+            <div className="absolute inset-0 bg-white z-[200] flex items-center justify-center">
+                <div className="flex flex-col items-center space-y-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0747A6]"></div>
+                    <p className="text-gray-500 font-medium">Bilet Detayları Yükleniyor...</p>
+                    <p>Bilet {ticketId} Yükleniyor...</p>
+                </div>
+            </div>
+        );
+    }
+
+    const isCreator = currentUser?.id === ticketData.createdBy?.id;
+    const isAssignee = currentUser?.id === ticketData.assignedTo?.id;
+    const canEdit = isCreator || isAssignee;
 
     const handleUpdate = async () => {
         if (!isEditing) {
@@ -96,11 +140,10 @@ const TicketDetailModal = ({ currentUser, ticket, onClose, refreshTickets }) => 
             if (response.status === 200 || response.status === 204) {
                 toast.success("Güncellendi! ✨");
                 setIsEditing(false);
-                console.log("geri gelen veri " ,response.data)
 
                 setTicketData(response.data || ticketData);
 
-                if (refreshTickets) refreshTickets(); 
+                if (refreshTickets) refreshTickets();
             }
         } catch (err) {
             toast.error("Kaydedilemedi.");
@@ -108,24 +151,17 @@ const TicketDetailModal = ({ currentUser, ticket, onClose, refreshTickets }) => 
     };
 
     const handleCancel = () => {
-       
+
         setEditedTitle(ticketData.title);
         setEditedDescription(ticketData.description);
         setEditedStatus(ticketData.status);
         setEditedPriority(ticketData.priority);
         setEditedAssignedToId(ticketData.assignedTo?.id || '');
-        setIsEditing(false); 
+        setIsEditing(false);
     };
 
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const response = await Api.get('/users/listForAssignment');
-                setUsers(response.data || []);
-            } catch (err) { console.error(err); }
-        };
-        if (isEditing && isCreator) fetchUsers();
-    }, [isEditing, isCreator]);
+
+
 
     const formatDate = (dateString) => {
         if (!dateString) return "Belirtilmedi";
@@ -134,24 +170,15 @@ const TicketDetailModal = ({ currentUser, ticket, onClose, refreshTickets }) => 
         });
     };
 
-    return (
-        <div className="fixed inset-0 bg-white z-[200] flex flex-col animate-in fade-in duration-200">
-            {/* Üst Bar */}
-            <header className="h-16 border-b px-8 flex items-center justify-between bg-gray-50/50">
-                <div className="flex items-center space-x-4">
-                    <span className="text-gray-400 text-sm">Projects / Ticket Management /</span>
-                    <span className="text-[#0747A6] font-bold tracking-tight">TKT-{ticketData.id.toString().substring(0, 8)}</span>
-                </div>
-                <button onClick={onClose} className="flex items-center space-x-2 text-gray-500 hover:text-gray-800 font-medium text-sm">
-                    <span>Board'a Dön</span>
-                    <span className="text-2xl leading-none">&times;</span>
-                </button>
-            </header>
 
+
+    return (
+        <div className="absolute inset-0 bg-white z-[200] flex flex-col animate-in fade-in duration-200">
+            
             <div className="flex-1 flex overflow-hidden">
                 {/* SOL BLOK: Bilet Detayları */}
-                <div className="flex-[1.5] overflow-y-auto p-12 border-r custom-scrollbar">
-                    <div className="flex items-start justify-between mb-8">
+                <div className="flex-[1.5] overflow-y-auto p-8 border-r custom-scrollbar">
+                    <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                             {isEditing && isCreator ? (
                                 <input className="text-3xl font-bold text-gray-900 border-b-2 border-blue-500 outline-none w-full bg-transparent"
@@ -238,16 +265,16 @@ const TicketDetailModal = ({ currentUser, ticket, onClose, refreshTickets }) => 
                                 <div className="flex items-start space-x-3">
                                     <div className="mt-1.5 w-2 h-2 rounded-full bg-green-400"></div>
                                     <div>
-                                        <p className="text-[11px] text-gray-500 font-medium">Oluşturan: <span className="text-gray-700 font-bold">{ticket.createdBy?.name + " " + ticket.createdBy?.surname}</span></p>
-                                        <p className="text-[10px] text-gray-400">{formatDate(ticket.createdAtDate)}</p>
+                                        <p className="text-[11px] text-gray-500 font-medium">Oluşturan: <span className="text-gray-700 font-bold">{ticketData.createdBy?.name + " " + ticketData.createdBy?.surname}</span></p>
+                                        <p className="text-[10px] text-gray-400">{formatDate(ticketData.createdAtDate)}</p>
                                     </div>
                                 </div>
-                                {ticket.updatedBy && (
+                                {ticketData.updatedBy && (
                                     <div className="flex items-start space-x-3">
                                         <div className="mt-1.5 w-2 h-2 rounded-full bg-blue-400"></div>
                                         <div>
-                                            <p className="text-[11px] text-gray-500 font-medium">Son Güncelleyen: <span className="text-gray-700 font-bold">{ticket.updatedBy?.name + " " + ticket.updatedBy?.surname}</span></p>
-                                            <p className="text-[10px] text-gray-400">{formatDate(ticket.updatedDate)}</p>
+                                            <p className="text-[11px] text-gray-500 font-medium">Son Güncelleyen: <span className="text-gray-700 font-bold">{ticketData.updatedBy?.name + " " + ticketData.updatedBy?.surname}</span></p>
+                                            <p className="text-[10px] text-gray-400">{formatDate(ticketData.updatedDate)}</p>
                                         </div>
                                     </div>
                                 )}
@@ -256,7 +283,7 @@ const TicketDetailModal = ({ currentUser, ticket, onClose, refreshTickets }) => 
                             <div className="flex items-center justify-between group">
                                 <div className="flex items-center space-x-3">
                                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#0747A6] font-bold ring-2 ring-white">
-                                        {ticket.assignedTo?.name?.charAt(0).toUpperCase()}
+                                        {ticketData.assignedTo?.name?.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="flex-1">
                                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Atanan Kişi</label>
@@ -289,7 +316,12 @@ const TicketDetailModal = ({ currentUser, ticket, onClose, refreshTickets }) => 
 
                 {/* SAĞ BLOK: Yorumlar */}
                 <div className="flex-1 bg-gray-50/30 flex flex-col overflow-hidden">
-                    <div className="p-8 border-b bg-white/50">
+                    <div className="p-4 flex justify-end">
+                        <button title ="Geri dön" onClick={onClose} className="flex items-center space-x-2 text-sm text-gray-500 hover:text-blue-600 transition-colors py-1 px-3 rounded-lg bg-gray-200 hover:bg-blue-100">
+                            <span>←</span>
+                            <span className="font-medium"> </span>
+                        </button></div>
+                    <div className="p-6 border-b bg-white/50">
                         <h3 className="font-bold text-gray-800">Aktivite <span className="text-[10px] bg-gray-200 px-2 py-0.5 rounded-full text-gray-500">Yorumlar</span></h3>
                     </div>
 

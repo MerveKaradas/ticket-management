@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
-const FilterBar = ({ filters, setFilters, users, onOpenCreateModal }) => {
+const FilterBar = ({ filters, setFilters, users, currentUser, onOpenCreateModal }) => {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const advancedRef = useRef(null);
-  
+
   useEffect(() => {
     const handleClick = (e) => {
       if (advancedRef.current && !advancedRef.current.contains(e.target)) setIsAdvancedOpen(false);
@@ -11,6 +11,14 @@ const FilterBar = ({ filters, setFilters, users, onOpenCreateModal }) => {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  const toggleFilter = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: prev[key] === value ? '' : value, // Aynı butona basınca filtreyi iptal eder
+
+    }));
+  };
 
   return (
     <div className="flex items-center justify-between mb-8">
@@ -28,7 +36,7 @@ const FilterBar = ({ filters, setFilters, users, onOpenCreateModal }) => {
           />
         </div>
 
-        {/* Gelişmiş Filtreleme Paneli */}
+        {/* Filtreleme Paneli */}
         <div className="relative" ref={advancedRef}>
           <button
             onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
@@ -36,7 +44,7 @@ const FilterBar = ({ filters, setFilters, users, onOpenCreateModal }) => {
               }`}
           >
             <span>⚡ Filtrele</span>
-            {/* Aktif filtre varsa ufak bir işaret gösterir */}
+            {/* Aktif filtre işareti */}
             {(filters.priority || filters.status || filters.assignedToId) && (
               <span className="flex h-2 w-2 rounded-full bg-blue-600"></span>
             )}
@@ -103,6 +111,43 @@ const FilterBar = ({ filters, setFilters, users, onOpenCreateModal }) => {
           )}
         </div>
         <div>
+        </div>
+
+        <div className="h-6 w-[1px] bg-gray-300 "></div>
+
+        <div className="flex items-center space-x-1">
+
+          <button
+            onClick={() => setFilters({ ...filters, priority: '', assignedToId: '', status: '' })}
+            className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${!filters.priority && !filters.assignedToId
+                ? "bg-gray-100 text-blue-800 shadow-sm"
+                : "text-slate-600 hover:bg-gray-50"
+              }`}
+          >
+            Hepsi
+          </button>
+
+          {/* Bana Atananlar */}
+          <button
+            onClick={() => toggleFilter('assignedToId', currentUser?.id)} 
+            className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${filters.assignedToId === currentUser?.id
+                ? "bg-gray-100 text-blue-800 shadow-sm"
+                : "text-slate-600 hover:bg-gray-50"
+              }`}
+          >
+            Bana Atananlar
+          </button>
+
+          {/* Acil Olanlar */}
+          <button
+            onClick={() => toggleFilter('priority', 'HIGH')} 
+            className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${filters.priority === 'HIGH'
+                ? "bg-gray-100 text-blue-800 shadow-sm"
+                : "text-slate-600 hover:bg-gray-50"
+              }`}
+          >
+            Acil Olanlar
+          </button>
         </div>
       </div>
 
