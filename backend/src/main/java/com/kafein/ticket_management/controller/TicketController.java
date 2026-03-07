@@ -70,6 +70,14 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.getAllTickets());
     }
 
+    @Operation(summary = "Belirli Bileti Görüntüleme", 
+                description = "'ADMIN' veya 'USER' yetkisine sahip olan kullanıcı seçilen bileti görünteyebilir.")
+    @GetMapping("/getTicket/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<ResponseTicketDto> getTicket(@PathVariable UUID id){
+        return ResponseEntity.ok(ticketService.getTicket(id));
+    }
+
     @Operation(summary = "Tüm Biletleri Silme", 
                 description = "'ADMIN' yetkisine sahip olan kullanıcı tüm biletleri silebilir.")
     @DeleteMapping("/deleteAllTickets")

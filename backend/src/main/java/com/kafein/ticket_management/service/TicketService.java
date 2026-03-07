@@ -226,4 +226,29 @@ public class TicketService {
                 .toList();
     }
 
+    public ResponseTicketDto getTicket(UUID id) {
+       return ticketRepository.findById(id)
+                .map((ticket) -> ticketMapper.toDto(ticket))
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", id)); 
+    }
+
+    public Map<TicketPriority, Long> getTotalPriority() {
+        List<Object[]> results = ticketRepository.countTicketsByPriorityRaw();
+        Map<TicketPriority, Long> priorityMap = new HashMap<>();
+
+        // Default olarak priority bulunmayanları da koruma altında alıyoruz özellikle UI
+        // kullanımında önemli
+        for (TicketPriority priority : TicketPriority.values()) {
+            priorityMap.put(priority, 0L);
+        }
+
+        for (Object[] result : results) {
+            TicketPriority priority = (TicketPriority) result[0];
+            Long count = (Long) result[1];
+            priorityMap.put(priority, count);
+        }
+
+        return priorityMap;
+    }
+
 }

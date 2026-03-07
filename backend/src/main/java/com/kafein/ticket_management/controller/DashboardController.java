@@ -3,6 +3,7 @@ package com.kafein.ticket_management.controller;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kafein.ticket_management.dto.response.ResponseTicketDto;
+import com.kafein.ticket_management.model.enums.TicketPriority;
 import com.kafein.ticket_management.model.enums.TicketStatus;
 import com.kafein.ticket_management.service.TicketService;
 
@@ -37,6 +38,12 @@ public class DashboardController {
     @GetMapping("/totalStatusTicket")
     public ResponseEntity<Map<TicketStatus,Long>> getTotalStatusTicketCount(){
         return ResponseEntity.ok(ticketService.getEachStatusTotalTicketsCount());
+    }
+
+    @Operation(summary = "Öncelik Bazlı Ticket Sayısı")
+    @GetMapping("/totalPriorityTicket")
+    public ResponseEntity<Map<TicketPriority,Long>> totalPriorityTicket(){
+        return ResponseEntity.ok(ticketService.getTotalPriority());
     }
 
     @Operation(summary = "Son Oluşturulan 5 Ticket")

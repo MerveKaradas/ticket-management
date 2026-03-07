@@ -14,4 +14,7 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID>, JpaSpecif
 
     @Query("SELECT t.status, COUNT(t) FROM Ticket t GROUP BY t.status")
     List<Object[]> countTicketsByStatusRaw();
+
+    @Query("SELECT t.priority, COUNT(t) FROM Ticket t GROUP BY t.priority")
+    List<Object[]> countTicketsByPriorityRaw();
 }
