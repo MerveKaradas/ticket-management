@@ -15,20 +15,17 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const response = await api.post('/users/login', {
+            const response = await api.post('/auth/login', {
                 email: formData.email,
                 password: formData.password
             });
 
             const token = response.data.accessToken;
-            const refreshToken = response.data.refreshToken;
 
             if (token) {
                 console.log("Giriş başarılı!");
           
-                localStorage.setItem('token', token);
-                localStorage.setItem('refreshToken', refreshToken);
-
+                localStorage.setItem('accessToken', token);
               
                 navigate('/dashboard');
             }

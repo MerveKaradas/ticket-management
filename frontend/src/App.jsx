@@ -13,7 +13,7 @@ import TicketDetailModal from './components/modals/TicketDetailModal';
 import PublicRoute from './components/PublicRoutes'; 
 
 const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('accessToken');
   return token ? children : <Navigate to="/home" />;
 };
 

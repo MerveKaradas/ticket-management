@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import Api from "../../services/Api"; 
+import Api from "../../services/Api";
 import LogoutConfirmModal from "../modals/LogoutConfirmModal";
 import { useNavigate } from "react-router-dom";
 
@@ -20,13 +20,10 @@ const Layout = () => {
   }, []);
 
   const confirmLogout = async () => {
-     try {
+    try {
 
-      const refreshToken = localStorage.getItem('refreshToken');
+      await Api.post('/auth/logout');
 
-      if (refreshToken) {
-        await Api.post('/users/logout', { refreshToken });
-      }
     } catch (err) {
       console.error("Logout hatası (yine de çıkış yapılıyor):", err);
     } finally {
@@ -38,29 +35,29 @@ const Layout = () => {
   };
 
   return (
-    
+
     <div className="flex h-screen w-full overflow-hidden font-sans text-gray-900">
-      
+
       {/* Sabit Sidebar */}
       <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} />
 
       <div className="relative flex-1 flex flex-col min-w-0 overflow-hidden p-4 space-y-4">
-        <Header 
-          currentUser={currentUser} 
-          isProfileOpen={isProfileOpen} 
-          setIsProfileOpen={setIsProfileOpen} 
-          setIsLogoutModalOpen={setIsLogoutModalOpen} 
+        <Header
+          currentUser={currentUser}
+          isProfileOpen={isProfileOpen}
+          setIsProfileOpen={setIsProfileOpen}
+          setIsLogoutModalOpen={setIsLogoutModalOpen}
         />
 
         {/* İçerik Alanı*/}
         <main className="flex-1 overflow-y-auto min-w-0">
-          <Outlet context={{ currentUser }} /> 
+          <Outlet context={{ currentUser }} />
         </main>
 
-        <LogoutConfirmModal 
-          isOpen={isLogoutModalOpen} 
-          onClose={() => setIsLogoutModalOpen(false)} 
-          onConfirm={confirmLogout} 
+        <LogoutConfirmModal
+          isOpen={isLogoutModalOpen}
+          onClose={() => setIsLogoutModalOpen(false)}
+          onConfirm={confirmLogout}
         />
       </div>
     </div>

@@ -41,7 +41,7 @@ public class SecurityConfig {
                 .exceptionHandling(e -> e.accessDeniedHandler(customAccessDeniedHandler)) // Security seviyesinde bulunan denetim için özel bir exception classı
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // OPTIONS isteklerine kayıtsız şartsız izin ver
-                        .requestMatchers("/api/users/login", "/api/users/createUser").anonymous() // Giriş yapmamış kullanıcılar için
+                        .requestMatchers("/api/auth/login", "/api/users/createUser").anonymous() // Giriş yapmamış kullanıcılar için
                         .requestMatchers("/v3/api-docs", 
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",

@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.kafein.ticket_management.model.RefreshToken;
 
-public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
+public interface TokenRepository extends JpaRepository<RefreshToken, Long> {
 
     boolean existsByUserId(UUID userId);
 
