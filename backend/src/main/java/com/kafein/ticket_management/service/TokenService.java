@@ -1,9 +1,12 @@
 package com.kafein.ticket_management.service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.kafein.ticket_management.model.RefreshToken;
@@ -73,5 +76,22 @@ public class TokenService {
         tokens.put("refreshToken", newRefreshToken);
         return tokens;
 
+    }
+
+    @Transactional
+    public void revokeAllTokens() {
+        List<RefreshToken> allTokens = tokenRepository.findAll();
+        allTokens.forEach((token) -> token.setRevoked(true));
+        tokenRepository.saveAll(allTokens);
     } 
+
+    @Scheduled(cron = "0 0 3 * * ?") 
+    @Transactional
+    public void purgeRevokedTokens() {
+        // admin tarafından iptal edilmiş olanları siler
+        tokenRepository.deleteByRevokedTrue();
+        //süresi geçenler için de uygulanacak
+        
+        
+    }
 }

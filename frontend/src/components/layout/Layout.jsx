@@ -39,7 +39,7 @@ const Layout = () => {
     <div className="flex h-screen w-full overflow-hidden font-sans text-gray-900">
 
       {/* Sabit Sidebar */}
-      <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} />
+      <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} currentUser={currentUser}/>
 
       <div className="relative flex-1 flex flex-col min-w-0 overflow-hidden p-4 space-y-4">
         <Header

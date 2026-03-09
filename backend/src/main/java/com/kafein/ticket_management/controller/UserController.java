@@ -51,7 +51,6 @@ public class UserController {
     @Operation(summary = "Kullanıcı Bilgisi", 
                description = "Sistemdeki mevcut kullanıcı, kendi bilgilerini görünteyebilir.")
     @GetMapping("/getCurrentUser")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ResponseUserDto> getCurrentUser(){
         return ResponseEntity.ok(userService.getUser());
     }
@@ -59,7 +58,6 @@ public class UserController {
     @Operation(summary = "Tüm Kullanıcıları İsimleri ve ID Değerleri ile Listeleme", 
                description = "Frontend kullanımında bilet atama işlemleri için gerekli olan bilgileri listeler.")
     @GetMapping("/listForAssignment")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<List<ResponseUserForAssignmentDto>> getAllUsersForAssignment(){
         return ResponseEntity.ok(userService.getAllUsersForAssignment());
 

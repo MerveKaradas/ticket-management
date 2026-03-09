@@ -46,7 +46,7 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }
 
-    @Transactional // TODO : HANGİ FRAMEWORK BAK
+    @Transactional 
     @Audit(action = "USER_CREATED")
     public ResponseUserDto createUser(RequestCreateUserDto requestCreateUserDto) {
 
@@ -128,7 +128,7 @@ public class UserService implements UserDetailsService {
     public List<ResponseUserForAssignmentDto> getAllUsersForAssignment() {
         return userRepository.findAll()
                 .stream()
-                .filter(user -> user.getRole() == Role.USER)
+                .filter(user -> user.getRole() == Role.USER || user.getRole() == Role.ADMIN)
                 .map(user -> userMapper.toUserForAssignmentDto(user))
                 .toList();
     }
@@ -137,7 +137,5 @@ public class UserService implements UserDetailsService {
         return userMapper.toDto(getCurrentUser());
         
     }
-
-   
 
 }

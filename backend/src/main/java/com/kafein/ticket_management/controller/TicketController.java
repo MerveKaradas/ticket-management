@@ -65,7 +65,7 @@ public class TicketController {
     @Operation(summary = "Tüm Biletleri Görüntüleme", 
                 description = "'ADMIN' veya 'USER' yetkisine sahip olan kullanıcı tüm biletleri görünteyebilir.")
     @GetMapping("/getAllTickets")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')") // TODO : Düzenlenecek
     public ResponseEntity<List<ResponseTicketDto>> getAllTickets(){
         return ResponseEntity.ok(ticketService.getAllTickets());
     }
@@ -73,7 +73,6 @@ public class TicketController {
     @Operation(summary = "Belirli Bileti Görüntüleme", 
                 description = "'ADMIN' veya 'USER' yetkisine sahip olan kullanıcı seçilen bileti görünteyebilir.")
     @GetMapping("/getTicket/{id}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<ResponseTicketDto> getTicket(@PathVariable UUID id){
         return ResponseEntity.ok(ticketService.getTicket(id));
     }
@@ -89,7 +88,7 @@ public class TicketController {
     }
 
     @Operation(summary = "Bilet Silme", 
-                description = "'ADMIN' yetkisine sahip olan kullanıcı bileti silebilir.")
+                description = "'ADMIN' yetkisine sahip olan kullanıcı belirli bir bileti silebilir.")
     @DeleteMapping("/deleteTicket/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteTicketById(@PathVariable UUID id){
@@ -115,7 +114,6 @@ public class TicketController {
     @Operation(summary = "Bilet Durumunu Güncelleme (Statü Geçişi)", 
                 description = "Biletin durumunu OPEN -> IN_PROGRESS -> DONE sırasıyla günceller. Sadece bilete atanan kullanıcı bu işlemi yapabilir. DONE durumundaki biletler tekrar OPEN yapılamaz.")
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ResponseTicketDto> updateTicketStatus(@PathVariable UUID id, @RequestBody TicketStatusUpdateRequestDto status) {
         return ResponseEntity.ok(ticketService.updateTicketStatus(id, status));
     }
@@ -124,7 +122,6 @@ public class TicketController {
     @Operation(summary = "Bilet İçeriğini Değiştirme", 
                 description = "Sadece bilete atanan kullanıcı bilet içeriğini güncelleyebilir.")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ResponseTicketDto> updateTicket(@PathVariable("id") UUID ticketId, @RequestBody @Valid RequestTicketDto requestTicketDto){
         return ResponseEntity.ok(ticketService.updateTicket(ticketId,requestTicketDto));
     }

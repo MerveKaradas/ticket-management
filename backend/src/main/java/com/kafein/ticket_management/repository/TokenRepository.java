@@ -1,5 +1,6 @@
 package com.kafein.ticket_management.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,6 +16,10 @@ public interface TokenRepository extends JpaRepository<RefreshToken, Long> {
     Optional<RefreshToken> findByToken(String token);
 
     List<RefreshToken> findByUserId(UUID id);
+
+    void deleteByRevokedTrue();
+
+   
 
     
 }

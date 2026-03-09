@@ -1,7 +1,5 @@
 package com.kafein.ticket_management.model;
 
-import java.util.UUID;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

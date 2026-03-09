@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard';
 import Layout from './components/layout/Layout';
 import TicketDetailModal from './components/modals/TicketDetailModal';
 import PublicRoute from './components/PublicRoutes'; 
+import AuditLogs from './pages/AuditLogs';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('accessToken');
@@ -41,6 +42,7 @@ function App() {
             <Route path="board" element={<Board />}>
               <Route path="ticket/:ticketId" element={<TicketDetailModal />} />
             </Route>
+            <Route path="/admin/logs" element={<AuditLogs />} />
           </Route>
 
           {/* Tanımsız rotalar */}
