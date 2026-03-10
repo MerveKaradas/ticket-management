@@ -7,17 +7,17 @@ const Sidebar = ({ isOpen, setIsOpen, currentUser }) => {
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: '📊' },
     { name: 'Board', path: '/board', icon: '📋' },
-    { name: 'Reports', path: '/Reports', icon: '📈' },
+    { name: 'Reports', path: '/Reports', icon: '🗃️' },
     { name: 'Settings', path: '/Settings', icon: '⚙️' }
   ];
 
   // ADMIN menüleri
   const adminMenuItems = [
+    { name: 'Admin Dashboard', path: '/admin/dashboard', icon: '📈' },
     { name: 'Users', path: '/admin/users', icon: '👥' },
-    { name: 'Audit Logs', path: '/admin/logs', icon: '📄' }
+    { name: 'Audit Logs', path: '/admin/logs', icon: '📄' },
+    
   ];
-
-  console.log("us",currentUser)
 
   return (
     <aside className={`${isOpen ? 'w-64' : 'w-20'} bg-[#0747A6] text-white transition-all duration-300 flex flex-col relative shrink-0`}>

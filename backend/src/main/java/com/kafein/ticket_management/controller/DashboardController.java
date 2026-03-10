@@ -2,56 +2,42 @@ package com.kafein.ticket_management.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kafein.ticket_management.dto.response.ResponseTicketDto;
-import com.kafein.ticket_management.model.enums.TicketPriority;
-import com.kafein.ticket_management.model.enums.TicketStatus;
-import com.kafein.ticket_management.service.TicketService;
+import com.kafein.ticket_management.dto.response.ResponseAdminDashboardSummaryDto;
+import com.kafein.ticket_management.dto.response.ResponseDashboardSummaryDto;
+import com.kafein.ticket_management.service.DashboardService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@Tag(name = "Dashboard API", description = "Ticket Bazlı Bilgi İşlemleri")
+@Tag(name = "Dashboard API", description = "Ticket Bazlı Bilgi İşlemleri") // todo : 
 @RestController
 @RequestMapping("/api/dashboard")
 public class DashboardController {
 
-    private final TicketService ticketService;
+    private final DashboardService dashboardService;
 
-    public DashboardController(TicketService ticketService){
-        this.ticketService = ticketService;
+    public DashboardController(DashboardService dashboardService) {
+        this.dashboardService = dashboardService;
     }
 
-    @Operation(summary = "Toplam Ticket Sayısı")
-    @GetMapping("/totalTicket")
-    public ResponseEntity<Long> getTotalTicketCount(){
-        return ResponseEntity.ok(ticketService.totalTicketCount());
+    @Operation(summary = "Sistem İstatistikleri")
+    @GetMapping("/summary")
+    public ResponseEntity<ResponseDashboardSummaryDto> getDashboardSummary() {
+        return ResponseEntity.ok(dashboardService.getDashboardSummary());
     }
 
-    @Operation(summary = "Status Bazlı Ticket Sayısı")
-    @GetMapping("/totalStatusTicket")
-    public ResponseEntity<Map<TicketStatus,Long>> getTotalStatusTicketCount(){
-        return ResponseEntity.ok(ticketService.getEachStatusTotalTicketsCount());
-    }
 
-    @Operation(summary = "Öncelik Bazlı Ticket Sayısı")
-    @GetMapping("/totalPriorityTicket")
-    public ResponseEntity<Map<TicketPriority,Long>> totalPriorityTicket(){
-        return ResponseEntity.ok(ticketService.getTotalPriority());
+    @Operation(summary = "(ADMIN): Sistem İstatistikleri (Kullanıcı Sayısı, Fail Rate vb.)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/summary")
+    public ResponseEntity<ResponseAdminDashboardSummaryDto> getAdminSummary() {
+        return ResponseEntity.ok(dashboardService.getAdminDashboardSummary());
     }
-
-    @Operation(summary = "Son Oluşturulan 5 Ticket")
-    @GetMapping("/getLast5Ticket")
-    public ResponseEntity<List<ResponseTicketDto>> getLast5Ticket(){
-        return ResponseEntity.ok(ticketService.getLast5Tickets());
-    }
-
-    
-    
+ 
 }

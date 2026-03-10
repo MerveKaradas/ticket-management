@@ -5,6 +5,7 @@ const Header = ({ currentUser, isProfileOpen, setIsProfileOpen, setIsLogoutModal
         '/': { root: 'Dashboard', title: 'Biletlerin Genel Durumu' },
         '/board': { root: 'Board', title: 'İş Takip Tahtası' },
         '/reports': { root: 'Analytics', title: 'Analiz ve Raporlar' },
+        '/admin/dashboard': { root: 'Management', title: 'Admin Dashboard' },
         '/admin/logs': { root: 'Management', title: 'Sistem Günlükleri' },
         '/admin/users': { root: 'Management', title: 'Kullanıcı Yönetimi' },
         '/settings': { root: 'System', title: 'Ayarlar' }
@@ -19,7 +20,7 @@ const Header = ({ currentUser, isProfileOpen, setIsProfileOpen, setIsLogoutModal
         <header className="h-16 border-b flex items-center justify-between px-6 bg-white shrink-0">
             <div className="flex items-center text-sm text-gray-500">
                 <span className="text-gray-900 ml-1 font-medium mr-1">{currentPathData.root} /</span>
-                <span className="text-[#0747A6]">{currentPathData.title}</span>
+                <span className="font-medium text-[#0747A6]">{currentPathData.title}</span>
             </div>
 
             <div className="relative ml-auto flex items-center space-x-3">

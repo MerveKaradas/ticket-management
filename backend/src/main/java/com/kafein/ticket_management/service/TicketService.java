@@ -1,10 +1,13 @@
 package com.kafein.ticket_management.service;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -227,9 +230,9 @@ public class TicketService {
     }
 
     public ResponseTicketDto getTicket(UUID id) {
-       return ticketRepository.findById(id)
+        return ticketRepository.findById(id)
                 .map((ticket) -> ticketMapper.toDto(ticket))
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", id)); 
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", id));
     }
 
     public Map<TicketPriority, Long> getTotalPriority() {
@@ -251,4 +254,55 @@ public class TicketService {
         return priorityMap;
     }
 
+    public Double calculateAverageResolveTime() {
+        // Sadece DONE 
+        List<Ticket> resolvedTickets = ticketRepository.findAllByStatus(TicketStatus.DONE);
+
+        if (resolvedTickets.isEmpty()) {
+            return 0.0;
+        }
+
+        // Oluşturulma ve son güncellenme arasındaki farkı hesabı
+        long totalMinutes = resolvedTickets.stream()
+                .mapToLong(ticket -> {
+                    return java.time.Duration.between(
+                            ticket.getCreatedAtDate(),
+                            ticket.getUpdatedDate()).toMinutes();
+                })
+                .sum();
+
+        double averageMinutes = (double) totalMinutes / resolvedTickets.size();
+        double averageHours = averageMinutes / 60.0;
+
+        return Math.round(averageHours * 10.0) / 10.0;
+    }
+
+    public Map<String, Long> getUserWorkloadDistribution() {
+        List<Object[]> results = ticketRepository.countTicketsByFullAssigneeName();
+
+        return results.stream()
+                .collect(Collectors.toMap(
+                        result -> (String) result[0],
+                        result -> (Long) result[1]));
+    }
+
+    public Map<String, Long> getDailyTrendAnalysis() {
+        // Gün başlangıcı
+        LocalDateTime startOfDay = LocalDateTime.now().with(LocalTime.MIN);
+
+        List<Object[]> results = ticketRepository.countDailyTrendByStatus(startOfDay);
+
+        Map<String, Long> trendMap = new HashMap<>();
+
+        results.forEach(result -> {
+            trendMap.put(((TicketStatus) result[0]).name(), (Long) result[1]);
+        });
+
+        // Grafikte boşluk kalmasın diye tüm statüleri 0 ile başlatıyoruz
+        for (TicketStatus status : TicketStatus.values()) {
+            trendMap.putIfAbsent(status.name(), 0L);
+        }
+
+        return trendMap;
+    }
 }

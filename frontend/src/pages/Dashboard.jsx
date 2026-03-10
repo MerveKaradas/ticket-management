@@ -22,33 +22,30 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const [totalRes, statusRes, priorityRes, lastRes] = await Promise.all([
-          Api.get('/dashboard/totalTicket'),
-          Api.get('/dashboard/totalStatusTicket'),
-          Api.get('/dashboard/totalPriorityTicket'),
-          Api.get('/dashboard/getLast5Ticket')
-        ]);
+        const response = await Api.get('/dashboard/summary');
+        const data = response.data;
+        console.log()
 
-        const chartData = Object.entries(statusRes.data).map(([name, value]) => ({
+        const chartData = Object.entries(data.eachStatusTotalTicketsCount || {}).map(([name, value]) => ({
           name,
           value
         }));
 
-        const statusData = statusRes.data;
-        const priorityData = priorityRes.data;
+        const statusData = data.eachStatusTotalTicketsCount || {};
+        const priorityData = data.totalPriority || {};
 
         const activeTickets = (statusData.OPEN || 0) +
           (statusData.IN_PROGRESS || 0) +
           (statusData.REOPENED || 0);
 
-        setStats(prev => ({
-          ...prev,
-          total: totalRes.data,
+
+        setStats({
+          total: data.totalTicketCount || 0,
           statusDistribution: chartData,
-          lastTickets: lastRes.data,
-          active : activeTickets,
-          high : priorityData.HIGH || 0
-        }));
+          lastTickets: data.last5Tickets || [],
+          active: activeTickets,
+          high: priorityData.HIGH || 0
+        });
       
 
       } catch (err) {

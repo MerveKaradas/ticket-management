@@ -2,6 +2,10 @@ package com.kafein.ticket_management.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -10,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kafein.ticket_management.dto.request.RequestCreateUserDto;
@@ -44,8 +49,15 @@ public class UserController {
                description = "Sadece 'ADMIN' yetkisine sahip olan kullanıcılar sistemde kayıtlı olan tüm kullanıcı listesini görünteyebilir.")
     @GetMapping("/getAllUsers")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<ResponseUserDto>> getAllUsers(){
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<Page<ResponseUserDto>> getAllUsers(
+        @RequestParam(required = false) String query,
+        @PageableDefault(
+                size = 10,
+                page = 0, 
+                sort = "createdAt", 
+                direction = Sort.Direction.DESC)
+            Pageable pageable){
+        return ResponseEntity.ok(userService.getAllUsers(query, pageable));
     }
 
     @Operation(summary = "Kullanıcı Bilgisi", 

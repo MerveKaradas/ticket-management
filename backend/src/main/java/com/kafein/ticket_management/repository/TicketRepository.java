@@ -1,13 +1,16 @@
 package com.kafein.ticket_management.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.kafein.ticket_management.model.Ticket;
+import com.kafein.ticket_management.model.enums.TicketStatus;
 
 public interface TicketRepository extends JpaRepository<Ticket, UUID>, JpaSpecificationExecutor<Ticket>{
     List<Ticket> findTop5ByOrderByCreatedAtDateDesc();
@@ -17,4 +20,14 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID>, JpaSpecif
 
     @Query("SELECT t.priority, COUNT(t) FROM Ticket t GROUP BY t.priority")
     List<Object[]> countTicketsByPriorityRaw();
+
+    List<Ticket> findAllByStatus(TicketStatus ticketStatus);
+
+    @Query("SELECT CONCAT(t.assignedTo.name, ' ', t.assignedTo.surname), COUNT(t) FROM Ticket t WHERE t.status != 'DONE' GROUP BY t.assignedTo.name ,t.assignedTo.surname")
+    List<Object[]> countTicketsByFullAssigneeName();
+
+    @Query("SELECT t.status, COUNT(t) FROM Ticket t " +
+           "WHERE t.updatedDate >= :startOfDay " +
+           "GROUP BY t.status")
+    List<Object[]> countDailyTrendByStatus(@Param("startOfDay") LocalDateTime startOfDay);
 }

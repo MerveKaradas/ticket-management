@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -89,16 +91,15 @@ public class UserService implements UserDetailsService {
         }
     }
 
-    public List<ResponseUserDto> getAllUsers() {
+    public Page<ResponseUserDto> getAllUsers(String query,Pageable pageable) {
         if (!isAdmin()) {
             throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
         }
 
-        return userRepository.findAll()
-                .stream()
-                .filter(user -> user.getRole() == Role.USER)
-                .map(user -> userMapper.toDto(user))
-                .toList();
+        String searchQuery = (query != null && !query.trim().isEmpty()) ? query : null;
+
+        return userRepository.searchUsers(searchQuery, pageable)
+            .map(user -> userMapper.toDto(user));
     }
 
     public User getCurrentUser() {
@@ -136,6 +137,10 @@ public class UserService implements UserDetailsService {
     public ResponseUserDto getUser() {
         return userMapper.toDto(getCurrentUser());
         
+    }
+
+    public Long totalUserCount(){
+        return userRepository.count();
     }
 
 }

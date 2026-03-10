@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kafein.ticket_management.model.AuditLog;
@@ -32,13 +33,14 @@ public class AdminController {
     @Operation(summary = "Audit Logları Görüntüleme", description = "'ADMIN' yetkisine sahip kullanıcı tarafından sistemdeki audit loglar görüntülenir ")
     @GetMapping("/logs")
     public ResponseEntity<Page<AuditLog>> getAuditLogs(
+            @RequestParam(required = false) String query,
             @PageableDefault(
                 size = 10,
                 page = 0, 
                 sort = "createdAtDate", 
                 direction = Sort.Direction.DESC)
             Pageable pageable) {
-        return ResponseEntity.ok(adminService.findAll(pageable));
+        return ResponseEntity.ok(adminService.findAll(query, pageable));
     }
 
     @Operation(summary = "Sistemdeki Kayıtlı Tüm Refresh Tokenları İptal Etme", description = "'ADMIN' yetkisine sahip kullanıcı tarafından şüpheli durumlarda sistemdeki tüm refresh tokenlar iptal edilir")
