@@ -15,6 +15,7 @@ const Sidebar = ({ isOpen, setIsOpen, currentUser }) => {
   const adminMenuItems = [
     { name: 'Admin Dashboard', path: '/admin/dashboard', icon: '📈' },
     { name: 'Users', path: '/admin/users', icon: '👥' },
+    { name: 'Tickets', path: '/admin/tickets', icon: '🗄️' },
     { name: 'Audit Logs', path: '/admin/logs', icon: '📄' },
     
   ];

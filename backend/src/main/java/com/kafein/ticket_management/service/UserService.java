@@ -143,4 +143,16 @@ public class UserService implements UserDetailsService {
         return userRepository.count();
     }
 
+    @Transactional
+    public void deleteUserById(UUID id) {
+        User currentUser = getCurrentUser();
+        boolean isAdmin = currentUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            userRepository.deleteById(id);
+        }
+        
+    }
+
 }

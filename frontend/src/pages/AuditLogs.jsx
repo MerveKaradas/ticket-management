@@ -32,7 +32,7 @@ const AuditLogPage = () => {
       <div className="p-8 pb-0 shrink-0 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Sistem Günlükleri</h1>
+            <h1 className="text-2xl font-semibold text-[#172B4D]">Sistem Günlükleri</h1>
             <p className="text-sm text-gray-500">Güvenlik ve işlem geçmişini buradan takip edebilirsiniz.</p>
           </div>
 
@@ -134,26 +134,25 @@ const AuditLogPage = () => {
         </div>
 
         {/* PAGINATION */}
-        <div className="shrink-0 flex items-center justify-between p-4 bg-white border-t border-gray-100">
+         <div className="shrink-0 flex items-center justify-between p-4 bg-white border-t border-gray-100">
           <div className="text-sm text-gray-500 font-medium">
             Toplam <span className="text-[#0747A6] font-bold">{totalPages}</span> sayfa / <span className="text-[#0747A6] font-bold">{page + 1}</span>. sayfa
           </div>
           
           <div className="flex space-x-2">
             <button 
-              disabled={page === 0}
+              disabled={page === 0} 
               onClick={() => setPage(p => p - 1)}
               className="px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-30 font-bold text-[10px] tracking-widest transition-all"
             >
-              ÖNCEKİ
+              ← GERİ
             </button>
-            
             <button 
-              disabled={page + 1 >= totalPages}
+              disabled={page + 1 >= totalPages} 
               onClick={() => setPage(p => p + 1)}
-              className="px-4 py-2 bg-[#0747A6] text-white rounded-xl hover:bg-[#0052CC] disabled:opacity-30 font-bold text-[10px] tracking-widest transition-all"
+              className="px-4 py-2 bg-[#0747A6] text-white rounded-xl hover:bg-[#0052CC] disabled:opacity-30 font-bold text-[10px] tracking-widest transition-all shadow-md shadow-blue-100"
             >
-              SONRAKİ
+              İLERİ →
             </button>
           </div>
         </div>

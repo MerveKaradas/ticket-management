@@ -19,8 +19,11 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 
     @Query("SELECT a FROM AuditLog a WHERE " +
             "(:query IS NULL OR " +
+            "LOWER(CAST(a.operation AS text)) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%')) OR " +
             "LOWER(CAST(a.performedBy AS text)) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%')) OR " +
-            "LOWER(CAST(a.operation AS text)) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%')))")
+            "LOWER(CAST(a.status AS text)) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%')) OR " +
+            "LOWER(CAST(a.details AS text)) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%')) OR " +
+            "LOWER(CAST(a.errorMessage AS text)) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%')))")
     Page<AuditLog> searchLogs(@Param("query") String query, Pageable pageable);
 
 }

@@ -1,6 +1,7 @@
 package com.kafein.ticket_management.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,7 +10,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,6 +61,15 @@ public class UserController {
                 direction = Sort.Direction.DESC)
             Pageable pageable){
         return ResponseEntity.ok(userService.getAllUsers(query, pageable));
+    }
+
+    @Operation(summary = "Kullanıcı Silme", 
+                description = "'ADMIN' yetkisine sahip olan kullanıcı belirli bir kullanıcıyı silebilir.")
+    @DeleteMapping("/deleteUser/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteUserById(@PathVariable UUID id){
+        userService.deleteUserById(id);
+        return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Kullanıcı Bilgisi", 

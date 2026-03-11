@@ -14,6 +14,7 @@ import PublicRoute from './components/PublicRoutes';
 import AuditLogs from './pages/AuditLogs';
 import UserManagement from './pages/UserManagement';
 import AdminDashboard from './pages/AdminDashboard';
+import TicketManagement from './pages/TicketManagement';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('accessToken');
@@ -46,6 +47,7 @@ function App() {
             </Route>
             <Route path="/admin/logs" element={<AuditLogs />} />
             <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/tickets" element={<TicketManagement />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
           </Route>
 

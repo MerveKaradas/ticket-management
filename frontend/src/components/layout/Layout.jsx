@@ -21,8 +21,7 @@ const Layout = () => {
 
   const confirmLogout = async () => {
     try {
-
-      await Api.post('/auth/logout');
+      Api.post('/auth/logout');
 
     } catch (err) {
       console.error("Logout hatası (yine de çıkış yapılıyor):", err);

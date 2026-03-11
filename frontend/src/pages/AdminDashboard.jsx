@@ -69,7 +69,7 @@ const AdminDashboard = () => {
 
       <div className="shrink-0">
         <h1 className="text-2xl font-semibold text-[#172B4D]">Kullanıcı & Sistem Odağı</h1>
-        <p className="text-sm font-medium text-gray-400 mt-1">Sistemdeki güncel duruma genel bir bakış.</p>
+        <p className="text-sm text-gray-500">Sistemdeki güncel duruma genel bir bakış.</p>
       </div>
 
       {/* Özet İstatistik Kartları */}
