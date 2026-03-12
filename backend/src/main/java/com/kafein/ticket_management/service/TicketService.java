@@ -69,6 +69,10 @@ public class TicketService {
     }
 
     public List<ResponseTicketDto> getAllTickets() {
+
+        if (!userService.isAdmin()) {
+            throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
+        }
         return ticketRepository.findAll()
                 .stream()
                 .map((ticket) -> ticketMapper.toDto(ticket))
@@ -131,7 +135,7 @@ public class TicketService {
 
         if (ticket.getAssignedTo().getId().equals(userService.getCurrentUser().getId())) {
 
-            if (!isValidTransition(ticket.getStatus(),requestStatusDto.status())) {
+            if (!isValidTransition(ticket.getStatus(), requestStatusDto.status())) {
                 throw new BusinessException("Geçersiz statü geçişi!");
             }
 
@@ -171,11 +175,11 @@ public class TicketService {
                     ticket.setStatus(TicketStatus.REOPENED);
                 } else {
                     if (requestTicketDto.status() != null && !ticket.getStatus().equals(requestTicketDto.status())) {
-                        if (!isValidTransition(ticket.getStatus(), requestTicketDto.status())) {
-                            throw new BusinessException("Geçersiz statü geçişi!");
-                        } else {
-                            ticket.setStatus(requestTicketDto.status());
-                        }
+                            if (!isValidTransition(ticket.getStatus(), requestTicketDto.status())) {
+                                throw new BusinessException("Geçersiz statü geçişi!");
+                            } else {
+                                ticket.setStatus(requestTicketDto.status());
+                            }
                     }
                 }
 
@@ -239,7 +243,8 @@ public class TicketService {
         List<Object[]> results = ticketRepository.countTicketsByPriorityRaw();
         Map<TicketPriority, Long> priorityMap = new HashMap<>();
 
-        // Default olarak priority bulunmayanları da koruma altında alıyoruz özellikle UI
+        // Default olarak priority bulunmayanları da koruma altında alıyoruz özellikle
+        // UI
         // kullanımında önemli
         for (TicketPriority priority : TicketPriority.values()) {
             priorityMap.put(priority, 0L);
@@ -255,7 +260,7 @@ public class TicketService {
     }
 
     public Double calculateAverageResolveTime() {
-        // Sadece DONE 
+        // Sadece DONE
         List<Ticket> resolvedTickets = ticketRepository.findAllByStatus(TicketStatus.DONE);
 
         if (resolvedTickets.isEmpty()) {

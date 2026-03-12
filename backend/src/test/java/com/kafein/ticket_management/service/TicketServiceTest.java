@@ -28,6 +28,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import com.kafein.ticket_management.dto.request.RequestCreateTicketDto;
 import com.kafein.ticket_management.dto.request.RequestTicketDto;
+import com.kafein.ticket_management.dto.request.TicketStatusUpdateRequestDto;
 import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
 import com.kafein.ticket_management.dto.response.ResponseTicketDto;
 import com.kafein.ticket_management.exception.BusinessException;
@@ -223,28 +224,6 @@ public class TicketServiceTest {
     }
 
     @Test
-    void updateStatus_WhenTicketAlreadyDone_ThrowsException() {
-        // ARRANGE
-        UUID ticketId = UUID.randomUUID();
-        TicketStatus status = TicketStatus.DONE;
-
-        Ticket ticket = Ticket.builder()
-                .id(ticketId)
-                .status(status)
-                .build();
-
-        given(ticketRepository.findById(ticketId)).willReturn(Optional.of(ticket));
-
-        // ACT ve ASSERT
-        assertThrows(BusinessException.class, () -> {
-            ticketService.updateTicketStatus(ticketId, status);
-        });
-
-        verify(ticketRepository, never()).save(any(Ticket.class));
-
-    }
-
-    @Test
     void updateStatus_WhenUserNotAssigned_ThrowsException() {
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
@@ -254,6 +233,7 @@ public class TicketServiceTest {
         User assignee = createUser(assigneeId);
         User currentUser = createUser(otherUserId);
         TicketStatus status = TicketStatus.IN_PROGRESS;
+        TicketStatusUpdateRequestDto dtoStatus = new TicketStatusUpdateRequestDto(status);
 
         Ticket ticket = Ticket.builder()
                 .id(ticketId)
@@ -266,76 +246,28 @@ public class TicketServiceTest {
 
         // ACT ve ASSERT
         assertThrows(AccessDeniedException.class, () -> {
-            ticketService.updateTicketStatus(ticketId, status);
+            ticketService.updateTicketStatus(ticketId, dtoStatus);
         });
 
         verify(ticketRepository, never()).save(any(Ticket.class));
 
     }
 
-    @Test
-    void updateStatus_WithInvalidTransition_ThrowsException() {
-        // ARRANGE
-        UUID ticketId = UUID.randomUUID();
-        UUID assigneeId = UUID.randomUUID();
-        User assignee = createUser(assigneeId);
-        User currentUser = assignee;
-        TicketStatus status = TicketStatus.DONE;
-
-        Ticket ticket = Ticket.builder()
-                .id(ticketId)
-                .assignedTo(assignee)
-                .status(TicketStatus.OPEN)
-                .build();
-
-        given(ticketRepository.findById(ticketId)).willReturn(Optional.of(ticket));
-        given(userService.getCurrentUser()).willReturn(currentUser);
-
-        // ACT ve ASSERT
-        assertThrows(BusinessException.class, () -> {
-            ticketService.updateTicketStatus(ticketId, status);
-        });
-
-        verify(ticketRepository, never()).save(any(Ticket.class));
-
-    }
-
-    // @Test
-    // void updateStatus_ToInProgress_ShouldSucceed() {
-    // // ARRANGE
-    // UUID ticketId = UUID.randomUUID();
-    // UUID assignedToUserId = UUID.randomUUID();
-    // User assignedToUser = createUser(assignedToUserId);
-    // User currentUser = createUser(assignedToUserId);
-    // TicketStatus status = TicketStatus.IN_PROGRESS;
-    // Ticket ticket = Ticket.builder()
-    // .id(ticketId)
-    // .assignedTo(assignedToUser)
-    // .status(TicketStatus.OPEN)
-    // .build();
-
-    // given(ticketRepository.findById(ticketId)).willReturn(Optional.of(ticket));
-    // given(userService.getCurrentUser()).willReturn(currentUser);
-
-    // // ACT
-    // ticketService.updateTicketStatus(ticketId, status);
-
-    // // ASSERT
-    // verify(ticketRepository, times(1)).save(any(Ticket.class));
-
-    // }
 
     @ParameterizedTest
     @CsvSource({
             "OPEN, IN_PROGRESS",
+            "REOPENED, IN_PROGRESS",
             "IN_PROGRESS, DONE",
-            "REOPENED, IN_PROGRESS"
+            "REOPENED, IN_PROGRESS",
+            "DONE, REOPENED"
     })
     @DisplayName("Geçerli tüm statü geçiş senaryoları başarıyla kaydedilmelidir")
-    void updateStatus_WithValidTransitions_ShouldSucceed(TicketStatus initialStatus, TicketStatus nextStatus) {
+    void updateStatus_WithValidTransitions_ShouldSucceed(TicketStatus initialStatus, TicketStatus targetStatus) {
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
         User user = createUser(UUID.randomUUID());
+        TicketStatusUpdateRequestDto requestStatusDto = new TicketStatusUpdateRequestDto(targetStatus);
         Ticket ticket = Ticket.builder()
                 .id(ticketId)
                 .assignedTo(user)
@@ -346,11 +278,46 @@ public class TicketServiceTest {
         given(userService.getCurrentUser()).willReturn(user);
 
         // ACT
-        ticketService.updateTicketStatus(ticketId, nextStatus);
+        ticketService.updateTicketStatus(ticketId, requestStatusDto);
 
         // ASSERT
         verify(ticketRepository, times(1)).save(any(Ticket.class));
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "OPEN, REOPENED",
+            "OPEN, DONE",
+            "REOPENED, OPEN",
+            "REOPENED, DONE",
+            "IN_PROGRESS, REOPENED",
+            "IN_PROGRESS, OPEN",
+            "DONE, OPEN",
+            "DONE, IN_PROGRESS"
+    })
+    @DisplayName("Geçersiz tüm statü geçiş senaryoları hata dönmelidir")
+    void updateStatus_WithInvalidTransition_ThrowsException(TicketStatus initialStatus, TicketStatus targetStatus) {
+        // ARRANGE
+        UUID ticketId = UUID.randomUUID();
+        User user = createUser(UUID.randomUUID());
+        TicketStatusUpdateRequestDto requestStatusDto = new TicketStatusUpdateRequestDto(targetStatus);
+        Ticket ticket = Ticket.builder()
+                .id(ticketId)
+                .assignedTo(user)
+                .status(initialStatus)
+                .build();
+
+        given(ticketRepository.findById(ticketId)).willReturn(Optional.of(ticket));
+        given(userService.getCurrentUser()).willReturn(user);
+
+        // ACT ve ASSERT
+        assertThrows(BusinessException.class, () -> {
+        ticketService.updateTicketStatus(ticketId, requestStatusDto);
+        });
+
+        verify(ticketRepository, never()).save(any(Ticket.class));
+    }
+
 
     @DisplayName("Bilet güncelleme metodunda güncellenmek istenen biletin bulunamaması durumunda ResourceNotFoundException türünde hata fırlatması.")
     @Test
@@ -397,7 +364,7 @@ public class TicketServiceTest {
         verifyNoInteractions(ticketMapper);
     }
 
-    @DisplayName("Bilet güncelleme metodunda güncellenecek olan ticketin bulunması durumunda ve ticket güncellemek isteyen kişinin mevcut kullanıcı olması durumunda ve yeni atanacak kullanıcının olması ve null gelmemesi ve kaydının bulunamaması durumunda ResourceNotFoundException türünde hata fırlatılması")
+    @DisplayName("Bilet güncelleme metodunda güncellenecek olan ticketin bulunması durumunda ve ticket güncellemek isteyen kişinin ticketi oluşturan kullanıcı olması durumunda ve yeni atanacak kullanıcının olması ve null gelmemesi ve kaydının bulunamaması durumunda ResourceNotFoundException türünde hata fırlatılması")
     @Test
     void updateTicket_WhenNewAssigneeNotFound_ThrowsException() {
 
@@ -433,7 +400,7 @@ public class TicketServiceTest {
         verifyNoInteractions(ticketMapper);
     }
 
-    @DisplayName("Bilet güncelleme metodunda güncellenecek olan ticketin bulunması durumunda ve ticket güncellemek isteyen kişinin mevcut kullanıcı olması durumunda ve yeni atanacak kullanıcının null gelme durumunda kayıt altına alınması")
+    @DisplayName("Bilet güncelleme metodunda güncellenecek olan ticketin bulunması durumunda ve ticket güncellemek isteyen kişinin ticketi oluşturan kullanıcı olması durumunda ve yeni atanacak kullanıcının null gelme durumunda kayıt altına alınması")
     @Test
     void updateTicket_WithNullAssignee_ShouldSucceed() {
         // ARRANGE
@@ -465,7 +432,7 @@ public class TicketServiceTest {
 
     }
 
-    @DisplayName("Bilet güncelleme metodunda güncellenecek olan ticketin bulunması durumunda ve ticket güncellemek isteyen kişinin mevcut kullanıcı olması durumunda ve  yeni atanacak kullanıcının olması ve null gelmemesi ve kaydının bulunması durumunda ve mevcut bilet durumunun statüsü 'DONE' türünde olması durumnda kayıt altına alınması")
+    @DisplayName("Bilet güncelleme metodunda güncellenecek olan ticketin bulunması durumunda ve ticket güncellemek isteyen kişinin bileti oluşturan kullanıcı olması durumunda ve  yeni atanacak kullanıcının olması ve null gelmemesi ve kaydının bulunması durumunda ve mevcut bilet durumunun statüsü 'DONE' türünde olması durumnda kayıt altına alınması")
     @Test
     void updateTicket_WhenTicketDone_ShouldReopen() {
 
@@ -501,7 +468,7 @@ public class TicketServiceTest {
 
     }
 
-    @DisplayName("Bilet güncelleme metodunda güncellenecek olan ticketin bulunması durumunda ve ticket güncellemek isteyen kişinin mevcut kullanıcı olması durumunda ve  yeni atanacak kullanıcının olması ve null gelmemesi ve kaydının bulunası durumunda ve request bilet durumunun statüsünün null olmaması ve mevcut bilet durumu ile request durumunun aynı olmaması durumunda ve geçiş kontrollerinin geçerli olması durumunda kayıt altına alınması")
+    @DisplayName("Bilet güncelleme metodunda güncellenecek olan ticketin bulunması durumunda ve ticket güncellemek isteyen kişinin ticketi oluşturan kullanıcı olması durumunda ve  yeni atanacak kullanıcının olması ve null gelmemesi ve kaydının bulunası durumunda ve request bilet durumunun statüsünün null olmaması ve mevcut bilet durumu ile request durumunun aynı olmaması durumunda ve geçiş kontrollerinin geçerli olması durumunda kayıt altına alınması")
     @Test
     void updateTicket_WithValidStatus_ShouldSucceed() {
 
@@ -537,7 +504,7 @@ public class TicketServiceTest {
 
     }
 
-    @DisplayName("Bilet güncelleme metodunda bussiness logic olarak güncellenecek olan ticketin bulunması durumunda ve ticket güncellemek isteyen kişinin mevcut kullanıcı olması durumunda ve  yeni atanacak kullanıcının olması ve null gelmemesi ve kaydının bulunası durumunda ve request bilet durumunun statüsünün null olmaması ve mevcut bilet durumu ile request durumunun aynı olmaması durumunda ve geçiş kontrollerinin geçerli olmaması durumunda BusinessException türünde hata fırlatılması")
+    @DisplayName("Bilet güncelleme metodunda bussiness logic olarak güncellenecek olan ticketin bulunması durumunda ve ticket güncellemek isteyen kişinin ticketi oluşturan kullanıcı olması durumunda ve  yeni atanacak kullanıcının olması ve null gelmemesi ve kaydının bulunası durumunda ve request bilet durumunun statüsünün null olmaması ve mevcut bilet durumu ile request durumunun aynı olmaması durumunda ve geçiş kontrollerinin geçerli olmaması durumunda BusinessException türünde hata fırlatılması")
     @Test
     void updateTicket_WithInvalidStatus_ThrowsException() {
 
@@ -575,7 +542,7 @@ public class TicketServiceTest {
 
     }
 
-    @DisplayName("Bilet güncelleme metodunda bussiness logic olarak güncellenecek olan ticketin bulunması durumunda ve ticket güncellemek isteyen kişinin mevcut kullanıcı olması durumunda ve  yeni atanacak kullanıcının olması ve null gelmemesi ve kaydının bulunası durumunda ve request bilet durumunun statüsünün null olmaması ve mevcut bilet durumu ile request durumunun aynı olması durumunda kayıt altına alınması")
+    @DisplayName("Bilet güncelleme metodunda bussiness logic olarak güncellenecek olan ticketin bulunması durumunda ve ticket güncellemek isteyen kişinin ticketi oluşturan kullanıcı olması durumunda ve  yeni atanacak kullanıcının olması ve null gelmemesi ve kaydının bulunası durumunda ve request bilet durumunun statüsünün null olmaması ve mevcut bilet durumu ile request durumunun aynı olması durumunda kayıt altına alınması")
     @Test
     void updateTicket_WithSameStatus_ShouldSucceed() {
 
@@ -712,6 +679,7 @@ public class TicketServiceTest {
     @Test
     void filterTickets_WithValidCriteria_ShouldReturnPagedTickets() {
         // ARRANGE
+        String title = "title";
         TicketStatus status = TicketStatus.OPEN;
         TicketPriority priority = TicketPriority.MEDIUM;
         UUID assignedToId = UUID.randomUUID();
@@ -725,7 +693,7 @@ public class TicketServiceTest {
         given(ticketRepository.findAll(any(Specification.class), any(Pageable.class))).willReturn(ticketPage);
 
         // ACT
-        Page<ResponseTicketDto> result = ticketService.filterTickets(status, priority, assignedToId, page, size);
+        Page<ResponseTicketDto> result = ticketService.filterTickets(title,status, priority, assignedToId, page, size);
 
         // ASSERT
         assertEquals(1, result.getTotalElements());

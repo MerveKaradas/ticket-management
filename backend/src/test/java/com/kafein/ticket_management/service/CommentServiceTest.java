@@ -43,14 +43,16 @@ public class CommentServiceTest {
 
     @InjectMocks
     private CommentService commentService;
-    @Test
-    void addComment_WhenTicketExists() {
+
+   @Test
+    void addComment_WhenTicketExists_ShouldSucceed() {
 
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
+        User user =  User.builder().name("Merve").surname("Karadas").build();
         Ticket ticket = Ticket.builder().id(ticketId).title("Ornek ticket").build();
         RequestCommentDto commentDto = new RequestCommentDto("Ornek yorum");
-        Comment comment = new Comment();
+        Comment comment = Comment.builder().author(user).build();
 
         given(ticketService.getTicketById(ticketId)).willReturn(Optional.of(ticket));
         given(commentRepository.save(any(Comment.class))).willReturn(comment);
@@ -58,21 +60,22 @@ public class CommentServiceTest {
         commentService.addComment(ticketId, commentDto);
 
         // ASSERT
+        verify(commentRepository, times(1)).save(any(Comment.class));
         verify(commentMapper, times(1)).toDto(any(Comment.class));
 
     }
 
     @Test
-    void addComment_WhenTicketDoesnotExists_ResourceNotFoundException() {
+    void addComment_WhenTicketDoesNotExist_ShouldThrowResourceNotFoundException() {
 
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
-
+        RequestCommentDto dto = new RequestCommentDto("test");
         given(ticketService.getTicketById(ticketId)).willReturn(Optional.empty());
 
         // ACT
         assertThrows(ResourceNotFoundException.class, () -> {
-            commentService.addComment(ticketId, any(RequestCommentDto.class));
+            commentService.addComment(ticketId, dto);
         });
 
         // ASSERT
@@ -81,15 +84,16 @@ public class CommentServiceTest {
     }
 
     @Test
-    void getAllCommentsByTicketId() {
+    void getAllCommentsByTicketId_WhenTicketExists_ShouldReturnCommentDtoList() {
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
+        User user =  User.builder().name("Merve").surname("Karadas").build();
         Ticket ticket = Ticket.builder().id(ticketId).title("Ornek ticket").build();
-        Comment comment = Comment.builder().ticket(ticket).build();
+        Comment comment = Comment.builder().author(user).ticket(ticket).build();
         List<Comment> comments = List.of(comment, comment);
 
         given(ticketService.getTicketById(ticketId)).willReturn(Optional.of(ticket));
-        given(commentRepository.findAllByTicket(ticket)).willReturn(comments);
+        given(commentRepository.findAllByTicketOrderByCreatedAtDesc(ticket)).willReturn(comments);
         // ACT
         commentService.getAllCommentsByTicketId(ticketId);
 
@@ -98,7 +102,7 @@ public class CommentServiceTest {
     }
 
     @Test
-    void deleteComment1() {
+    void deleteComment_WhenCommentDoesNotExist_ShouldThrowResourceNotFoundException() {
         // ARRANGE
         UUID commentId = UUID.randomUUID();
 
@@ -112,7 +116,7 @@ public class CommentServiceTest {
     }
 
     @Test
-    void deleteComment() {
+    void deleteComment_WhenUserIsAuthor_ShouldSucceed() {
         // ARRANGE
         UUID userId = UUID.randomUUID();
         User user = User.builder().id(userId).build();
@@ -130,7 +134,7 @@ public class CommentServiceTest {
     }
 
     @Test
-    void deleteComment3() {
+    void deleteComment_WhenUserIsNotAuthor_ShouldThrowBusinessException() {
         // ARRANGE
         UUID userId = UUID.randomUUID();
         User user = User.builder().id(userId).build();
@@ -144,8 +148,6 @@ public class CommentServiceTest {
         assertThrows(BusinessException.class, () -> {
             commentService.deleteComment(commentId);
         });
-
-
     }
 
 }
