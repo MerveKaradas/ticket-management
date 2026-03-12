@@ -15,7 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@Tag(name = "Dashboard API", description = "Ticket Bazlı Bilgi İşlemleri") // todo : 
+@Tag(name = "Dashboard API", description = "Sistem Genelinde Ticket İstatistiklerini ve Uygulama Özet Bilgileri") 
 @RestController
 @RequestMapping("/api/dashboard")
 public class DashboardController {
@@ -26,14 +26,20 @@ public class DashboardController {
         this.dashboardService = dashboardService;
     }
 
-    @Operation(summary = "Sistem İstatistikleri")
+    @Operation(summary = "Genel Dashboard Özeti",
+        description = "Sistemdeki ticketlara ait genel bilgileri döndürür. "
+                    + "Bu endpoint tüm kullanıcılar tarafından görüntülenebilir. "
+    )
     @GetMapping("/summary")
     public ResponseEntity<ResponseDashboardSummaryDto> getDashboardSummary() {
         return ResponseEntity.ok(dashboardService.getDashboardSummary());
     }
 
 
-    @Operation(summary = "(ADMIN): Sistem İstatistikleri (Kullanıcı Sayısı, Fail Rate vb.)")
+    @Operation(summary = "Admin Dashboard Özeti",
+       description = "Sistem yöneticileri için detaylı istatistikleri döndürür. "
+                    + "Bu endpoint sadece 'ADMIN' yetkisine sahip kullanıcılar tarafından erişilebilir. "
+                    + "Kullanıcı sayısı, sistem hata oranı ve diğer yönetimsel metrikleri içerir.")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/summary")
     public ResponseEntity<ResponseAdminDashboardSummaryDto> getAdminSummary() {

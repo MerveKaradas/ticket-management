@@ -274,7 +274,7 @@ public class TicketService {
         double averageMinutes = (double) totalMinutes / resolvedTickets.size();
         double averageHours = averageMinutes / 60.0;
 
-        return Math.round(averageHours * 10.0) / 10.0;
+        return Math.round(averageHours * 100.0) / 100.0;
     }
 
     public Map<String, Long> getUserWorkloadDistribution() {

@@ -20,7 +20,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-@Tag(name = "Comment API", description = "Biletlere yorum ekleme,silme ve listeleme işlemleri")
+@Tag(name = "Comment API", description = "Biletlere Yorum Ekleme,Silme ve Listeleme İşlemleri")
 @RestController
 @RequestMapping("/api/comments")
 public class CommentController {
@@ -31,7 +31,7 @@ public class CommentController {
         this.commentService = commentService;
     }
 
-    @Operation(summary = "Yeni Yorum Ekleme", description = "Herhangi bir kullanıcı bilete yorum ekleyebilir.")
+    @Operation(summary = "Yeni Yorum Ekleme")
     @PostMapping("/{ticketId}/comment")
     public ResponseEntity<ResponseCommentDto> addComment(@PathVariable UUID ticketId,
             @RequestBody @Valid RequestCommentDto commentDto) {
@@ -39,14 +39,14 @@ public class CommentController {
     }
 
     @Operation(summary = "Yorumları Görüntüleme", 
-                description = "Bilet altında bulunan tüm yorumları görüntüler.")
+                description = "Bilet altında bulunan tüm yorumları görüntülenebilir.")
     @GetMapping("/{ticketId}")
     public ResponseEntity<List<ResponseCommentDto>> getAllCommentsByTicketId(@PathVariable UUID ticketId) {
         return ResponseEntity.ok(commentService.getAllCommentsByTicketId(ticketId));
 
     }
 
-    @Operation(summary = "Yorum Silme", description = "Sadece yorumu oluşturan kullanıcı tarafından yorum silinir.")
+    @Operation(summary = "Yorum Silme", description = "Sadece yorumu oluşturan kullanıcı tarafından yorum silinebilir.")
     @DeleteMapping("/{commentId}")
     public ResponseEntity<Void> deleteComment(@PathVariable UUID commentId) {
         commentService.deleteComment(commentId);

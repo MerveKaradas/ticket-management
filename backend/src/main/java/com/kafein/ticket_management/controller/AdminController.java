@@ -30,7 +30,7 @@ public class AdminController {
         this.adminService = adminService;
     }
 
-    @Operation(summary = "Audit Logları Görüntüleme", description = "'ADMIN' yetkisine sahip kullanıcı tarafından sistemdeki audit loglar görüntülenir ")
+    @Operation(summary = "Audit Logları Görüntüleme", description = "Sadece 'ADMIN' yetkisine sahip kullanıcı tarafından sistemdeki audit loglar görüntülenebilir.")
     @GetMapping("/logs")
     public ResponseEntity<Page<AuditLog>> getAuditLogs(
             @RequestParam(required = false) String query,
@@ -43,7 +43,7 @@ public class AdminController {
         return ResponseEntity.ok(adminService.findAll(query, pageable));
     }
 
-    @Operation(summary = "Sistemdeki Kayıtlı Tüm Refresh Tokenları İptal Etme", description = "'ADMIN' yetkisine sahip kullanıcı tarafından şüpheli durumlarda sistemdeki tüm refresh tokenlar iptal edilir")
+    @Operation(summary = "Sistemdeki Kayıtlı Tüm Refresh Tokenları İptal Etme", description = "Sadece 'ADMIN' yetkisine sahip kullanıcı tarafından şüpheli durumlarda sistemdeki tüm refresh tokenlar iptal edilir.")
     @PostMapping("/logout-all")
     public ResponseEntity<Void> logoutAllUsers() {
         adminService.revokeAllTokens();
