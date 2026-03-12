@@ -25,7 +25,6 @@ const AdminDashboard = () => {
     try {
       const response = await getSummary();
       const data = response.data;
-      console.log("data  : ", data)
 
       const formattedStatus = Object.entries(data.dailyTrendAnalysis).map(([key, value]) => ({
         name: key,

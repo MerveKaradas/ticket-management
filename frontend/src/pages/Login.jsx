@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; 
 import api from '../services/Api';
+import { toast } from 'react-toastify';
 
 const Login = () => {
     const navigate = useNavigate(); 
@@ -30,8 +31,7 @@ const Login = () => {
                 navigate('/dashboard');
             }
         } catch (err) {
-            console.error("Giriş hatası:", err);
-            alert("Giriş başarısız! E-posta veya şifre hatalı olabilir.");
+            toast.error('Email veya şifre hatalı!');
         } finally {
             setLoading(false); 
         }

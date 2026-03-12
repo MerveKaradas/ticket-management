@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
-import { toast } from 'react-toastify'; 
+import { toast } from 'react-toastify';
 import Api from '../../services/Api';
 
 const CreateTicketModal = ({ isOpen, onClose, refreshTickets }) => {
-    
+
     const [users, setUsers] = useState([]);
-    
+
     const [newTicket, setNewTicket] = useState({
         title: '',
         description: '',
         priority: 'LOW',
-        assignedToId: '' 
+        assignedToId: ''
     });
 
     useEffect(() => {
@@ -32,21 +32,32 @@ const CreateTicketModal = ({ isOpen, onClose, refreshTickets }) => {
         e.preventDefault();
         try {
             const response = await Api.post('/tickets/createTicket', newTicket);
-            
+
             if (response.status === 200 || response.status === 201) {
-           
+
                 toast.success('Bilet başarıyla oluşturuldu! 🚀', {
                     position: "bottom-right",
                     autoClose: 3000,
                 });
 
-                onClose(); 
-                setNewTicket({ title: '', description: '', priority: 'LOW', assignedToId: '' }); 
-                
-                if (refreshTickets) refreshTickets(); // TODO : KONTROL ET
+                onClose();
+                setNewTicket({ title: '', description: '', priority: 'LOW', assignedToId: '' });
+
+                if (refreshTickets) refreshTickets(); 
             }
         } catch (err) {
-            console.error("Bilet oluşturma hatası:", err.response?.data);
+            
+            const messages = err.response?.data?.messages;
+
+            let toastMessage = "";
+
+            if (messages && typeof messages === "object") {
+                toastMessage = Object.values(messages).join(" | ");
+            } else {
+                toastMessage = messages || "Beklenmeyen bir hata oluştu.";
+            }
+
+            toast.error(toastMessage);
         }
     };
 

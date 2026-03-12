@@ -13,7 +13,7 @@ public record RequestCreateTicketDto(
     
     @Schema(example = "Örnek Başlık")
     @NotBlank(message = "Bilet başlığı boş olamaz")
-    @Size(min = 5, max = 150, message = "Başlık 5-150 karakter arasında olmalıdır")
+    @Size(min = 3, max = 150, message = "Başlık 3-150 karakter arasında olmalıdır")
     String title,
 
     @Schema(example = "Bilete uygun olarak açıklamayı oluşturmalısınız.")

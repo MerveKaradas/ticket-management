@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getAuditLogs } from '../services/AdminService'; 
 
@@ -59,35 +58,32 @@ const AuditLogPage = () => {
       {/* TABLO KART */}
       <div className="flex-1 flex flex-col m-8 overflow-hidden bg-white rounded-3xl shadow-xl border border-gray-100 min-h-0">
         
-        {/* TABLO BAŞLIĞI */}
-        <div className="shrink-0 bg-gray-100/50 border-b border-gray-100">
-          <table className="w-full text-left table-fixed">
-            <thead>
+        <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar relative">
+          <table className="w-full text-left">
+            <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 w-1/5">Kullanıcı</th>
-                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 w-1/5">İşlem</th>
-                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 w-2/5">Detaylar</th>
-                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 text-center w-1/6">Durum</th>
-                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 w-1/6">Tarih</th>
+                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 w-[15%]">Kullanıcı</th>
+                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 w-[12%]">İşlem</th>
+                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 w-[30%]">Detaylar</th>
+                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 w-[20%] text-left">Hata</th>
+                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 text-center w-[13%]">Durum</th>
+                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 w-[10%]">Tarih</th>
               </tr>
             </thead>
-          </table>
-        </div>
-
-        {/* TABLO İÇERİĞİ */}
-        <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
-          <table className="w-full text-left table-fixed">
+            
             <tbody className="divide-y divide-gray-50">
               {loading && (
-                <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-20">
-                  <span className="text-[#0747A6] font-bold animate-bounce">Loglar Getiriliyor...</span>
-                </div>
+                <tr className="absolute inset-0 bg-white/60 flex items-center justify-center z-20">
+                  <td colSpan="6" className="text-center">
+                    <span className="text-[#0747A6] font-bold animate-bounce">Loglar Getiriliyor...</span>
+                  </td>
+                </tr>
               )}
               
               {logs.length > 0 ? (
                 logs.map((log) => (
                   <tr key={log.id} className="hover:bg-blue-100/30 transition-colors group">
-                    <td className="px-6 py-4 w-1/5">
+                    <td className="px-6 py-4 w-[15%]">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0747A6] flex items-center justify-center text-xs font-bold shrink-0">
                           {log.performedBy.charAt(0).toUpperCase()}
@@ -95,24 +91,29 @@ const AuditLogPage = () => {
                         <span className="text-sm font-semibold text-gray-700 truncate">{log.performedBy}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 w-1/5">
+                    <td className="px-6 py-4 w-[12%]">
                       <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-bold tracking-tight uppercase inline-block truncate">
                         {log.operation}
                       </span>
                     </td>
-                    <td className="px-6 py-4 w-2/5">
-                      <p className="text-xs text-gray-500 truncate" title={log.details}>
-                        {log.details}
+                    <td className="px-6 py-4 w-[30%]">
+                      <p className="text-xs text-gray-500 whitespace-normal break-words" title={log.details}>
+                        {log.details} 
                       </p>
                     </td>
-                    <td className="px-6 py-4 text-center w-1/6">
+                    <td className="px-6 py-4 w-[20%] text-left">
+                      <p className="text-xs text-gray-500 whitespace-normal break-words" title={log.errorMessage}>
+                        {log.errorMessage || '-'}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4 text-center w-[13%]">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                         log.status === 'SUCCESS' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                       }`}>
-                        {log.status === 'SUCCESS' ? '✓ BAŞARILI' : '✕ HATALI'}
+                        {log.status === 'SUCCESS' ? '✓ SUCCESS' : '✕ FAILED'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 w-1/6">
+                    <td className="px-6 py-4 w-[10%]">
                       <div className="text-[11px] text-gray-500 font-medium whitespace-nowrap">
                         {new Date(log.createdAtDate).toLocaleDateString()}
                         <span className="block text-gray-300">
@@ -125,7 +126,7 @@ const AuditLogPage = () => {
               ) : (
                 !loading && (
                   <tr>
-                    <td colSpan="5" className="text-center py-20 text-gray-400 font-medium">Kayıt bulunamadı.</td>
+                    <td colSpan="6" className="text-center py-20 text-gray-400 font-medium">Kayıt bulunamadı.</td>
                   </tr>
                 )
               )}

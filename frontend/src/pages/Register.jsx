@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/Api';
-import { toast } from 'react-toastify'; 
+import { toast } from 'react-toastify';
 
 
 const Register = () => {
@@ -20,18 +20,38 @@ const Register = () => {
     e.preventDefault();
     setError('');
 
+    if (formData.name.length < 2 || formData.name.length > 50) {
+      toast.error('İsim 2-50 karakter arasında olmalıdır.');
+      return;
+    }
+
+    if (formData.surname.length < 2 || formData.surname.length > 50) {
+      toast.error('Soyad 2-50 karakter arasında olmalıdır.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error('Geçerli bir email giriniz.');
+      return;
+    }
+
+    if (formData.password.length > 100 || formData.password.length < 8) {
+      toast.error('Parola 8-100 karakter arasında olmalıdır!.');
+      return;
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      const msg = "Parola en az bir büyük harf, bir küçük harf, bir sayı ve bir özel karakter içermeli";
+      toast.error(msg);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
-      setError('Şifreler birbiriyle eşleşmiyor!');
+      toast.error('Parolalar birbiriyle eşleşmiyor!');
       return;
     }
-
-    // TODO : BACKENDS VALİD'E GÖRE DÜZENLENECEK
-    if (formData.password.length < 6) {
-      setError('Şifre en az 6 karakter olmalıdır.');
-      return;
-    }
-
-    console.log("Kayıt verileri gönderiliyor:", formData);
 
     try {
       const response = await api.post('/users/createUser', {
@@ -53,8 +73,17 @@ const Register = () => {
       }
 
     } catch (err) {
-      console.error("Kayıt hatası:", err);
-      alert("Kayıt başarısız!");
+
+      const messages = err.response?.data?.message;
+      let toastMessage = "";
+
+      if (messages && typeof messages === "object") {
+        toastMessage = Object.values(messages).join(" | ");
+      } else {
+        toastMessage = messages || "Kayıt başarısız.";
+      }
+
+      toast.error(toastMessage);
     }
 
   };

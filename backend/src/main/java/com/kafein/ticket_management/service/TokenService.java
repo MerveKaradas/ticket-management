@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.kafein.ticket_management.aop.Audit;
 import com.kafein.ticket_management.model.RefreshToken;
 import com.kafein.ticket_management.model.User;
 import com.kafein.ticket_management.repository.TokenRepository;
@@ -78,6 +79,7 @@ public class TokenService {
     }
 
     @Transactional
+    @Audit(action = "REVOKE_ALL_TOKEN")
     public void revokeAllTokens() {
         List<RefreshToken> allTokens = tokenRepository.findAll();
         allTokens.forEach((token) -> token.setRevoked(true));
@@ -89,7 +91,7 @@ public class TokenService {
     public void purgeRevokedTokens() {
         // admin tarafından iptal edilmiş olanları siler
         tokenRepository.deleteByRevokedTrue();
-        //süresi geçenler için de uygulanacak
+        //TODO : süresi geçenler için de uygulanacak
         
         
     }

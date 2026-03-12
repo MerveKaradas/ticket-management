@@ -21,6 +21,12 @@ Api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // KRİTİK NOKTA: Eğer hata alan istek login isteği ise REFRESH YAPMA!
+    // Doğrudan hatayı Login.jsx içindeki catch bloğuna fırlatır.
+    if (originalRequest.url.includes('/auth/login')) {
+      return Promise.reject(error);
+    }
+
     // 401 hatası geldiyse ve bu istek daha önce tekrar edilmediyse
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;

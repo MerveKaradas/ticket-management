@@ -53,7 +53,7 @@ public class AuthService {
                                             requestLoginDto.email(), 
                                             AuditLogStatus.FAILED,
                                 "Geçersiz email denemesi.", 
-                                "Kullanıcı bulunamadı");
+                                "Kullanıcı bulunamadı!");
                     return new BadCredentialsException("Email veya şifre hatalı");
                 });
 
@@ -62,7 +62,7 @@ public class AuthService {
                                         requestLoginDto.email(), 
                                         AuditLogStatus.FAILED,
                                 "Hatalı şifre denemesi.", 
-                             "Geçersiz password");
+                             "Geçersiz password!");
             throw new BadCredentialsException("Email veya şifre hatalı");
         }
         Map<String, String> tokens = tokenService.generateToken(user);
