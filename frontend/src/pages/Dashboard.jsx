@@ -46,7 +46,7 @@ const Dashboard = () => {
           active: activeTickets,
           high: priorityData.HIGH || 0
         });
-      
+
 
       } catch (err) {
         console.error("Dashboard yüklenirken hata:", err);
@@ -58,7 +58,12 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+  const STATUS_COLORS = {
+    'DONE': '#00C49F',        
+    'IN_PROGRESS': '#0088FE', 
+    'OPEN': '#FFBB28',    
+    'REOPENED': '#FF8042'         
+  };
 
   if (loading) return <div className="p-8 text-gray-500 font-medium">Veriler yükleniyor...</div>;
 
@@ -78,7 +83,7 @@ const Dashboard = () => {
           {/* Grafik Kartı */}
           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col min-h-0">
             <h3 className="text-lg font-bold text-gray-800 mb-4 shrink-0">Bilet Durum Dağılımı</h3>
-       
+
             <div className="flex-1 w-full min-h-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.statusDistribution}>
@@ -91,7 +96,7 @@ const Dashboard = () => {
                   />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                     {stats.statusDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#8884d8'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -123,7 +128,10 @@ const Dashboard = () => {
                       <p className="text-[11px] text-gray-400 mt-1">#{ticket.id.toString().substring(0, 8)}</p>
                     </div>
                   </div>
-                  <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${ticket.status === 'DONE' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${ticket.status === 'DONE' ? 'bg-green-50 text-green-600' :
+                      ticket.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-600' :
+                        ticket.status === 'OPEN' ? 'bg-orange-100 text-orange-600' :
+                          'bg-red-50 text-red-600'
                     }`}>
                     {ticket.status}
                   </span>

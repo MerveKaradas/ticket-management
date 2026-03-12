@@ -1,8 +1,21 @@
 import { Link } from 'react-router-dom';
+import landingPage from '../assets/LandingPage.png';
 
 const Home = () => {
   return (
    <div className="min-h-screen bg-gray-50 flex flex-col">
+
+     {/* Arka Plan Görsel Katmanı */}
+      <div 
+        className="absolute inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `url(${landingPage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'blur(8px)', 
+          opacity: 0.2, 
+        }}
+      />
 
       <nav className="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-blue-600">TicketMaster</h1>
@@ -14,8 +27,13 @@ const Home = () => {
         </div>
       </nav>
 
+       
+
       <main className="flex-grow flex items-center justify-center px-4">
+        
+        
         <div className="text-center max-w-3xl">
+        
           <h2 className="text-5xl font-extrabold text-gray-900 mb-6">
             Destek Taleplerinizi <span className="text-blue-600">Akıllıca</span> Yönetin
           </h2>

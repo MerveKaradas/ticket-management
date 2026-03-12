@@ -24,7 +24,7 @@ const Sidebar = ({ isOpen, setIsOpen, currentUser }) => {
     <aside className={`${isOpen ? 'w-64' : 'w-20'} bg-[#0747A6] text-white transition-all duration-300 flex flex-col relative shrink-0`}>
       <div className="p-4 flex items-center space-x-3">
         <div className="min-w-[40px] h-10 bg-white/20 rounded flex items-center justify-center font-bold text-xl">T</div>
-        {isOpen && <span className="font-bold text-lg whitespace-nowrap">Ticket Pro</span>}
+        {isOpen && <span className="font-bold text-lg whitespace-nowrap">Ticket Master</span>}
       </div>
 
       <nav className="flex-1 mt-6 px-3 space-y-1">

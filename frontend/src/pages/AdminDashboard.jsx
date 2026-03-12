@@ -63,6 +63,13 @@ const AdminDashboard = () => {
 
   const CHART_COLORS = ['#0052CC','#4C9AFF', '#e0ddf0', '#00B8D9', '#0747A6'  ];
 
+  const STATUS_COLORS = {
+    'DONE': '#00C49F',        
+    'IN_PROGRESS': '#0088FE', 
+    'OPEN': '#FFBB28',    
+    'REOPENED': '#FF8042'         
+  };
+
   return (
     <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white p-6 space-y-6">
 
@@ -130,7 +137,7 @@ const AdminDashboard = () => {
                 />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                   {stats.statusDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#8884d8'}  />
                   ))}
                 </Bar>
               </BarChart>

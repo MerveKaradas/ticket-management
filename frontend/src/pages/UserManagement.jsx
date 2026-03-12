@@ -11,7 +11,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [page,searchTerm]);
+  }, [page, searchTerm]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -28,10 +28,11 @@ const UserManagement = () => {
   const handleDeleteUser = async (id) => {
     if (window.confirm("Bu kullanıcıyı silmek istediğinize emin misiniz?")) {
       try {
-        await deleteUser(id);
-        fetchUsers();
-      } catch (err) { 
-        alert("Silme başarısız!"); 
+        // await deleteUser(id);
+        // fetchUsers();
+        alert("Soft delete mantığı aktif edildiğinde silme komutu etkinleştirilecktir!");
+      } catch (err) {
+        alert("Silme başarısız!");
         console.log(err.message)
       }
     }
@@ -110,19 +111,19 @@ const UserManagement = () => {
 
                     {/* Rol */}
                     <td className="px-6 py-4 text-center w-1/5">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold  ${user.role === 'ADMIN'
-                        ? 'bg-purple-50 text-purple-600'
-                        : 'bg-blue-50 text-blue-600'
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${user.role === 'ADMIN'
+                          ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
                         }`}>
                         {user.role}
                       </span>
+
                     </td>
 
                     {/* Durum */}
                     <td className="px-6 py-4 text-center w-1/5">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-50 text-green-600">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2 animate-pulse"></span>
-                        AKTİF
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-600
+                      }`}>
+                        ✓ AKTİF
                       </span>
                     </td>
 
@@ -134,7 +135,7 @@ const UserManagement = () => {
                         </button>
                         <button
                           onClick={(e) => {
-                            e.stopPropagation(); 
+                            e.stopPropagation();
                             handleDeleteUser(user.id);
                           }}
                           className="p-2 hover:bg-red-50 rounded-xl transition-all text-gray-400 hover:text-red-600" title="Sil">

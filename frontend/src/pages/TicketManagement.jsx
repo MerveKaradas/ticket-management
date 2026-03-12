@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { deleteAllTickets, deleteTicket, filterTickets, getAllTickets } from '../services/TicketService';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const TicketManagement = () => {
     const [tickets, setTickets] = useState([]);
@@ -34,8 +35,17 @@ const TicketManagement = () => {
     const handleDeleteTicket = async (id) => {
         if (window.confirm("Bu bileti silmek istediğinize emin misiniz?")) {
             try {
-                await deleteTicket(id);
+                const response = await deleteTicket(id);
+                
                 fetchTickets();
+                if (response.status === 200 || response.status === 201) {
+                    toast.success('Bilet başarıyla silindi!', {
+                        position: "bottom-right",
+                        autoClose: 3000,
+                    });
+                }
+
+
             } catch (err) { alert("Silme başarısız!"); }
         }
     };
@@ -105,10 +115,12 @@ const TicketManagement = () => {
                     <table className="w-full text-left table-fixed border-collapse">
                         <thead>
                             <tr>
-                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 w-2/5">Bilet / Başlık</th>
-                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 text-center w-1/5">Durum</th>
-                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 text-center w-1/5">Öncelik</th>
-                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 text-right w-1/5">İşlemler</th>
+                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 w-[20%]">Bilet / Başlık</th>
+                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 text-left w-[20%]">Oluşturan</th>
+                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 text-left w-[20%]">Atanan</th>
+                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 text-center w-[15%]">Durum</th>
+                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 text-center w-[15%]">Öncelik</th>
+                                <th className="px-6 py-4 text-[11px] font-black uppercase tracking-wider text-gray-400 text-right w-[10%]">İşlemler</th>
                             </tr>
                         </thead>
                     </table>
@@ -123,30 +135,34 @@ const TicketManagement = () => {
                                     key={ticket.id}
                                     onClick={() => navigate(`/board/ticket/${ticket.id}`)}
                                     className="hover:bg-blue-100/30 transition-colors group">
-                                    <td className="px-6 py-4 w-2/5">
+                                    <td className="px-6 py-4 w-[20%]">
                                         <div className="text-sm font-semibold text-gray-700 truncate">{ticket.title}</div>
                                         <div className="text-[11px] text-gray-400 truncate">#{ticket.id.toString().substring(0, 8)}</div>
                                     </td>
-                                    <td className="px-6 py-4 text-center w-1/5">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase shadow-sm ${ticket.status === 'IN_PROGRESS' ? 'bg-[#0088FE]/10 text-[#0088FE]' : // Mavi
-                                            ticket.status === 'DONE' ? 'bg-[#00C49F]/10 text-[#00C49F]' : 
-                                                ticket.status === 'REOPENED' ? 'bg-[#FFBB28]/10 text-[#FFBB28]' : 
-                                                    ticket.status === 'OPEN' ? 'bg-[#FF8042]/10 text-[#FF8042]' : 
-                                                        'bg-[#8884d8]/10 text-[#8884d8]'
-                                            }`}>
+                                    <td className="px-6 py-4 w-[20%]">
+                                        <div className="text-sm font-semibold text-gray-700/80 truncate">{ticket.createdBy?.name} {ticket.createdBy?.surname}</div>
+                                    </td>
+                                    <td className="px-6 py-4 w-[20%]">
+                                        <div className="text-sm font-semibold text-gray-700/80 truncate">{ticket.assignedTo?.name} {ticket.assignedTo?.surname}</div>
+                                    </td>
+                                    <td className="px-6 py-4 text-center w-[15%]">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${ticket.status === 'OPEN'
+                                            ? 'bg-red-50 text-red-600 border border-red-100' :
+                                            ticket.status === 'REOPENED' ? 'bg-orange-50 text-orange-600 border border-orange-100' :
+                                                ticket.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                                                    ticket.status === 'DONE' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-gray-50 text-gray-600 border border-gray-100'}`}>
                                             {ticket.status}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-center w-1/5">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase shadow-sm 
-                                                ${ticket.priority === 'HIGH' ? 'bg-[#FF8042]/10 text-[#FF8042]' : 
-                                                ticket.priority === 'MEDIUM' ? 'bg-[#FFBB28]/10 text-[#FFBB28]' : 
-                                                    'bg-[#00C49F]/10 text-[#00C49F]'  
-                                            }`}>
+                                    <td className="px-6 py-4 text-center w-[15%]">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${ticket.priority === 'HIGH'
+                                            ? 'bg-red-50 text-red-600 border border-red-100' :
+                                            ticket.priority === 'MEDIUM' ? 'bg-yellow-50 text-yellow-600 border border-yellow-100' :
+                                                ticket.priority === 'LOW' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-gray-50 text-gray-600 border border-gray-100'}`}>
                                             {ticket.priority}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right w-1/5">
+                                    <td className="px-6 py-4 text-right w-[10%]">
                                         <button onClick={(e) => {
                                             e.stopPropagation();
                                             handleDeleteTicket(ticket.id);
