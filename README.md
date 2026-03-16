@@ -15,6 +15,10 @@
 * **Maven** → Dependency & Build management
 * **Docker & Docker Compose**
 * **JUnit 5 & Mockito** → Birim testler
+* **React 18:** Modern UI bileşenleri ve performanslı rendering.
+* **Tailwind CSS:** Responsive ve kurumsal tasarım dili.
+* **Recharts:** Sistem metriklerinin görselleştirilmesi için kullanılan grafik kütüphanesi.
+* **Axios:** Backend entegrasyonu ve interceptor yönetimi.
 
 ## 📂 Mimari Yapı
 
@@ -31,12 +35,15 @@ Proje **katmanlı mimari** ve modern tasarım desenleri üzerine kuruludur:
 * **Exception Handling:** `GlobalExceptionHandler` ve özel exception sınıfları.
 * **Mapper:** `MapStruct` arayüzleri (`TicketMapper`, `UserMapper`, `CommentMapper`).
 
+**Frontend UI:** React 18 tabanlı; Tailwind CSS ile responsive tasarlanmış ve Recharts ile veri analitiği sunan modern kullanıcı arayüzü.
+
 ## ⚙️ Kurulum ve Çalıştırma
 
 ### 1. Gereklilikler
 
 * **Java 17+**
 * **Maven 3.8+**
+* **Node.js (v18+) & npm/yarn** (Frontend için)
 * **Docker & Docker Compose**
 
 ### 2. Ortam Değişkenleri (.env)
@@ -66,7 +73,7 @@ docker-compose up --build -d
 
 ### 4. API Dokümantasyonu
 
-👉 **Swagger UI:** `http://localhost:8080/swagger-ui/index.html` (Uygulama çalışırken)
+👉 **Swagger UI:** `http://localhost:8080/swagger-ui/index.html#/` (Uygulama çalışırken)
 
 ## 🔑 Öne Çıkan Özellikler
 

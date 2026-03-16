@@ -16,9 +16,23 @@ services:
     container_name: ticket-management
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment: # .env dosyasından alınanan değerler
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION}
       REFRESH_TOKEN_EXPIRATION: ${REFRESH_TOKEN_EXPIRATION}
     depends_on:
       - postgres
+
+  frontend:
+    build: 
+      context: ./frontend
+      args:
+        - VITE_API_BASE_URL=http://localhost:8080 
+    ports:
+      - "3000:80" 
+    depends_on:
+      - ticket-management
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080 
