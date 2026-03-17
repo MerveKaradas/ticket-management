@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { deleteAllTickets, deleteTicket, filterTickets, getAllTickets } from '../services/TicketService';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import ConfirmModal from '../components/modals/ConfirmModal';
 
 const TicketManagement = () => {
     const [tickets, setTickets] = useState([]);
@@ -13,6 +14,11 @@ const TicketManagement = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
     const [priorityFilter, setPriorityFilter] = useState("");
+
+    // MODAL 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedTicketId, setSelectedTicketId] = useState(null);
+    const [modalType, setModalType] = useState("single"); 
 
     const navigate = useNavigate();
 
@@ -32,30 +38,36 @@ const TicketManagement = () => {
         setLoading(false);
     };
 
-    const handleDeleteTicket = async (id) => {
-        if (window.confirm("Bu bileti silmek istediğinize emin misiniz?")) {
-            try {
-                const response = await deleteTicket(id);
-                
-                fetchTickets();
-                if (response.status === 200 || response.status === 201) {
-                    toast.success('Bilet başarıyla silindi!', {
-                        position: "bottom-right",
-                        autoClose: 3000,
-                    });
-                }
+    const openDeleteModal = async (id) => {
+        setSelectedTicketId(id);
+        setModalType("single");
+        setIsModalOpen(true);
 
-
-            } catch (err) { alert("Silme başarısız!"); }
-        }
     };
 
-    const handleDeleteAllTickets = async () => {
-        if (window.confirm("DİKKAT! Sistemdeki TÜM biletler silinecek. Bu işlem geri alınamaz!")) {
-            try {
+
+
+    const openDeleteAllModal = async () => {
+
+        setModalType("all");
+        setIsModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        setIsModalOpen(false); 
+        try {
+            if (modalType === "single") {
+                const response = await deleteTicket(selectedTicketId);
+                if (response.status === 200 || response.status === 200) {
+                    toast.success('Bilet başarıyla silindi!');
+                }
+            } else {
                 await deleteAllTickets();
-                fetchTickets();
-            } catch (err) { alert("İşlem başarısız!"); }
+                toast.success('Tüm biletler temizlendi!');
+            }
+            fetchTickets(); 
+        } catch (err) {
+            toast.error("İşlem başarısız!");
         }
     };
 
@@ -69,7 +81,7 @@ const TicketManagement = () => {
                         <h1 className="text-2xl font-semibold text-[#172B4D]">Bilet Yönetimi</h1>
                         <p className="text-sm text-gray-500">Sistemdeki biletleri detaylı filtreleyin.</p>
                     </div>
-                    <button onClick={handleDeleteAllTickets} className="px-4 py-2 bg-red-600 text-white rounded-2xl hover:bg-red-700 transition-all font-bold text-xs shadow-lg shadow-red-100">
+                    <button onClick={openDeleteAllModal} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all semi-bold text-xs shadow-lg shadow-red-100">
                         ⚠️ Tüm Biletleri Sil
                     </button>
                 </div>
@@ -165,7 +177,7 @@ const TicketManagement = () => {
                                     <td className="px-6 py-4 text-right w-[10%]">
                                         <button onClick={(e) => {
                                             e.stopPropagation();
-                                            handleDeleteTicket(ticket.id);
+                                            openDeleteModal(ticket.id);
                                         }}
 
                                             className="p-2 hover:bg-red-50 rounded-xl text-gray-400 hover:text-red-600 transition-all">
@@ -202,6 +214,20 @@ const TicketManagement = () => {
                     </div>
                 </div>
             </div>
+
+            {/* MODAL */}
+            <ConfirmModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title={modalType === "single" ? "Bileti Sil" : "Tüm Biletleri Sil"}
+                message={modalType === "single"
+                    ? "Bu bileti silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
+                    : "DİKKAT! Sistemdeki TÜM biletler silinecek. Bu işlem kesinlikle geri alınamaz!"}
+                confirmText={modalType === "single" ? "Evet, Onayla" : "Evet, Hepsini Sil"}
+                type="danger"
+                icon={modalType === "single" ? "🗑️" : "⚠️"}
+            />
         </div>
     );
 };

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getAllUsers } from '../services/AdminService';
 import { deleteUser } from '../services/UserService';
+import ConfirmModal from '../components/modals/ConfirmModal';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -8,6 +9,10 @@ const UserManagement = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -25,16 +30,18 @@ const UserManagement = () => {
     setLoading(false);
   };
 
-  const handleDeleteUser = async (id) => {
-    if (window.confirm("Bu kullanıcıyı silmek istediğinize emin misiniz?")) {
-      try {
-        // await deleteUser(id);
-        // fetchUsers();
-        alert("Soft delete mantığı aktif edildiğinde silme komutu etkinleştirilecktir!");
-      } catch (err) {
-        alert("Silme başarısız!");
-        console.log(err.message)
-      }
+  const openDeleteModal = (id) => {
+    setSelectedUserId(id);
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsModalOpen(false);
+    try {
+      alert(`ID: ${selectedUserId} olan kullanıcı için silme komutu gönderildi (Soft Delete bekleniyor).`);
+    } catch (err) {
+      alert("Silme başarısız!");
+      console.log(err.message);
     }
   };
 
@@ -112,7 +119,7 @@ const UserManagement = () => {
                     {/* Rol */}
                     <td className="px-6 py-4 text-center w-1/5">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${user.role === 'ADMIN'
-                          ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                        ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
                         }`}>
                         {user.role}
                       </span>
@@ -136,7 +143,7 @@ const UserManagement = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteUser(user.id);
+                            openDeleteModal(user.id);
                           }}
                           className="p-2 hover:bg-red-50 rounded-xl transition-all text-gray-400 hover:text-red-600" title="Sil">
                           🗑️
@@ -182,6 +189,19 @@ const UserManagement = () => {
           </div>
         </div>
       </div>
+
+      {/* MODAL */}
+      <ConfirmModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title={"Kullanıcıyı Sil"}
+        message={
+          "Bu kullanıcıyı silmek istediğinize emin misiniz?"}
+        confirmText={"Evet, Onayla"}
+        type="danger"
+        icon={"🗑️"}
+      />
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import Api from "../../services/Api";
-import LogoutConfirmModal from "../modals/LogoutConfirmModal";
+import ConfirmModal from "../modals/ConfirmModal";
 import { useNavigate } from "react-router-dom";
 
 const Layout = () => {
@@ -53,10 +53,16 @@ const Layout = () => {
           <Outlet context={{ currentUser }} />
         </main>
 
-        <LogoutConfirmModal
+        <ConfirmModal
           isOpen={isLogoutModalOpen}
           onClose={() => setIsLogoutModalOpen(false)}
           onConfirm={confirmLogout}
+          title="Oturumu Kapat?"
+          message="Çıkış yapmak istediğine emin misin? Mevcut oturumun sonlandırılacak"
+          confirmText="Evet, Onayla"
+          cancelText="Vazgeç"
+          type="danger" 
+          icon="👋"
         />
       </div>
     </div>

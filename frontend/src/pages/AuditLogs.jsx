@@ -26,7 +26,7 @@ const AuditLogPage = () => {
 
   const handleDownloadExcel = async () => {
     try {
-      const token = localStorage.getItem('accessToken'); // JWT token'ını al
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`http://localhost:8080/api/admin/export?query=${searchTerm}&format=excel`, {
         method: 'GET',
         headers: {
@@ -52,15 +52,12 @@ const AuditLogPage = () => {
 
       {/* HEADER */}
       <div className="p-8 pb-0 shrink-0 space-y-6">
-        {/* BAŞLIK VE AKSİYONLARIN OLDUĞU SATIR */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          {/* Sol Taraf: Başlık */}
           <div>
             <h1 className="text-2xl font-semibold text-[#172B4D]">Sistem Günlükleri</h1>
             <p className="text-sm text-gray-500">Güvenlik ve işlem geçmişini buradan takip edebilirsiniz.</p>
           </div>
 
-          {/* Sağ Taraf: Arama ve Buton Grubu (İşte Burası Yan Yana Yapan Kısım) */}
           <div className="flex items-center space-x-2">
             {/* Arama Barı */}
             <div className="relative">

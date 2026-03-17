@@ -155,7 +155,7 @@ const FilterBar = ({ filters, setFilters, users, currentUser, onOpenCreateModal 
         </div>
       </div>
 
-      <button onClick={onOpenCreateModal} className="bg-[#0052CC] hover:bg-[#0747A6] text-white px-6 py-2 rounded-lg font-bold text-sm shadow-md transition-all active:scale-95">
+      <button onClick={onOpenCreateModal} className="bg-[#0052CC] hover:bg-[#0747A6] text-white px-6 py-2 rounded-lg text-sm shadow-md transition-all active:scale-95">
         + Oluştur
       </button>
     </div>
