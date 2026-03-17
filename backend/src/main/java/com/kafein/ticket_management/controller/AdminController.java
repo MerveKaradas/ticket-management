@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kafein.ticket_management.dto.response.ResponseReportDto;
 import com.kafein.ticket_management.model.AuditLog;
 import com.kafein.ticket_management.service.AdminService;
 import com.kafein.ticket_management.service.ReportService;
@@ -50,20 +51,21 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Audit Logları Dışa Aktarma", description = "Sadece 'ADMIN' yetkisine sahip kullanıcı tarafından audit loglar excel formatında dışa aktarılır.")
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportExcel(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String format) {
 
-        byte[] data = reportService.generateAuditLogReport(query, format);
+        ResponseReportDto report = reportService.generateAuditLogReport(query, format);
 
-        String filename = "audit_logs_" + System.currentTimeMillis() + ".xlsx";
-       
-       return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-            .contentLength(data.length)
-            .body(data);
+        String filename = "audit_logs_" + System.currentTimeMillis() + report.getFileExtension();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType(report.getContentType()))
+                .contentLength(report.getRawData().length) // Boyutu bildirerek bozulmayı önlüyoruz
+                .body(report.getRawData());
     }
 
 }

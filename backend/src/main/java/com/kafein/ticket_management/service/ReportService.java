@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.kafein.ticket_management.dto.response.ResponseReportDto;
 import com.kafein.ticket_management.model.AuditLog;
 import com.kafein.ticket_management.service.export.ExportFactory;
 import com.kafein.ticket_management.service.export.ExportStrategy;
@@ -21,17 +22,22 @@ public class ReportService {
         this.exportFactory = exportFactory;
     }
 
-    public byte[] generateAuditLogReport(String query, String format) {
+    public ResponseReportDto generateAuditLogReport(String query, String format) {
         // Veriyi çekme 
         List<AuditLog> logs = auditLogService.export(query);
 
         ExportStrategy strategy = exportFactory.getStrategy(format == null ? "EXCEL" : format);
-
-        try (ByteArrayInputStream stream = strategy.export(logs)) {
-            return stream.readAllBytes();
+        byte[] rawData;
+        try (ByteArrayInputStream bis = strategy.export(logs)) {
+            rawData = bis.readAllBytes();
         } catch (IOException e) {
             throw new RuntimeException("Veri okunurken hata oluştu", e);
         }
+
+        return new ResponseReportDto(
+                rawData,
+                strategy.getContentType(),
+                strategy.getFileExtension());
     }
 
 }
