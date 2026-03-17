@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +43,12 @@ public class AuditLogService {
         String searchQuery = (query != null && !query.trim().isEmpty()) ? query : null;
 
         return auditLogRepository.searchLogs(searchQuery, pageable);
+    }
+
+      public List<AuditLog> export(String query) {
+        Pageable unpaged = PageRequest.of(0, Integer.MAX_VALUE, Sort.by("createdAtDate").descending());
+
+        return findAll(query, unpaged).getContent();
     }
 
     public Double calculateSystemFailRate() {

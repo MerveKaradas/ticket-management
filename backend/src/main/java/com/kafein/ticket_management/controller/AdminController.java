@@ -4,6 +4,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.kafein.ticket_management.model.AuditLog;
 import com.kafein.ticket_management.service.AdminService;
+import com.kafein.ticket_management.service.ReportService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,21 +28,18 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class AdminController {
 
     private final AdminService adminService;
+    private final ReportService reportService;
 
-    public AdminController(AdminService adminService) {
+    public AdminController(AdminService adminService, ReportService reportService) {
         this.adminService = adminService;
+        this.reportService = reportService;
     }
 
     @Operation(summary = "Audit Logları Görüntüleme", description = "Sadece 'ADMIN' yetkisine sahip kullanıcı tarafından sistemdeki audit loglar görüntülenebilir.")
     @GetMapping("/logs")
     public ResponseEntity<Page<AuditLog>> getAuditLogs(
             @RequestParam(required = false) String query,
-            @PageableDefault(
-                size = 10,
-                page = 0, 
-                sort = "createdAtDate", 
-                direction = Sort.Direction.DESC)
-            Pageable pageable) {
+            @PageableDefault(size = 10, page = 0, sort = "createdAtDate", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(adminService.findAll(query, pageable));
     }
 
@@ -48,6 +48,22 @@ public class AdminController {
     public ResponseEntity<Void> logoutAllUsers() {
         adminService.revokeAllTokens();
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportExcel(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String format) {
+
+        byte[] data = reportService.generateAuditLogReport(query, format);
+
+        String filename = "audit_logs_" + System.currentTimeMillis() + ".xlsx";
+       
+       return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .contentLength(data.length)
+            .body(data);
     }
 
 }
