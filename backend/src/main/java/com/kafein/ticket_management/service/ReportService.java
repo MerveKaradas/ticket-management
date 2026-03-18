@@ -1,8 +1,7 @@
 package com.kafein.ticket_management.service;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 
@@ -23,21 +22,16 @@ public class ReportService {
     }
 
     public ResponseReportDto generateAuditLogReport(String query, String format) {
-        // Veriyi çekme 
-        List<AuditLog> logs = auditLogService.export(query);
 
-        ExportStrategy strategy = exportFactory.getStrategy(format == null ? "EXCEL" : format);
-        byte[] rawData;
-        try (ByteArrayInputStream bis = strategy.export(logs)) {
-            rawData = bis.readAllBytes();
-        } catch (IOException e) {
-            throw new RuntimeException("Veri okunurken hata oluştu", e);
+        try (Stream<AuditLog> logStream = auditLogService.streamAll(query)) {
+
+            ExportStrategy strategy = exportFactory.getStrategy(format);
+
+            ByteArrayInputStream stream = strategy.export(logStream);
+
+            String filename = "audit_logs_" + System.currentTimeMillis() + strategy.getFileExtension();
+            return new ResponseReportDto(stream, strategy.getContentType(), filename);
         }
-
-        return new ResponseReportDto(
-                rawData,
-                strategy.getContentType(),
-                strategy.getFileExtension());
     }
 
 }

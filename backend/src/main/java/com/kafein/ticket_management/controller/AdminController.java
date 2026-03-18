@@ -1,5 +1,6 @@
 package com.kafein.ticket_management.controller;
 
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -53,19 +54,19 @@ public class AdminController {
 
     @Operation(summary = "Audit Logları Dışa Aktarma", description = "Sadece 'ADMIN' yetkisine sahip kullanıcı tarafından audit loglar excel formatında dışa aktarılır.")
     @GetMapping("/export")
-    public ResponseEntity<byte[]> exportExcel(
+    public ResponseEntity<InputStreamResource> exportExcel(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String format) {
 
         ResponseReportDto report = reportService.generateAuditLogReport(query, format);
-
-        String filename = "audit_logs_" + System.currentTimeMillis() + report.getFileExtension();
+        
+        InputStreamResource resource = new InputStreamResource(report.getRawData());
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + report.getFileName() + "\"")
                 .contentType(MediaType.parseMediaType(report.getContentType()))
-                .contentLength(report.getRawData().length) // Boyutu bildirerek bozulmayı önlüyoruz
-                .body(report.getRawData());
+                .contentLength(report.getRawData().available()) // Boyutu bildirerek bozulmayı önlüyoruz
+                .body(resource);
     }
 
 }

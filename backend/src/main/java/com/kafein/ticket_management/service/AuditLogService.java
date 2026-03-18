@@ -2,11 +2,10 @@ package com.kafein.ticket_management.service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,10 +44,9 @@ public class AuditLogService {
         return auditLogRepository.searchLogs(searchQuery, pageable);
     }
 
-      public List<AuditLog> export(String query) {
-        Pageable unpaged = PageRequest.of(0, Integer.MAX_VALUE, Sort.by("createdAtDate").descending());
-
-        return findAll(query, unpaged).getContent();
+    @Transactional(readOnly = true)
+    public Stream<AuditLog> streamAll(String query) {
+        return auditLogRepository.streamAllByQuery(query);
     }
 
     public Double calculateSystemFailRate() {
