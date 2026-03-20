@@ -17,8 +17,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -29,7 +31,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "tickets")
+@Table(name = "tickets", indexes = {
+    @Index(name="idx_created_by", columnList = "created_by_id"),
+    @Index(name="idx_assigned_to_id", columnList = "assigned_to_id"),
+    @Index(name="idx_status_priority", columnList = "status, priority"),
+    @Index(name="idx_created_at", columnList = "createdAtDate") 
+})
 @Setter
 @Getter
 @NoArgsConstructor
@@ -58,16 +65,16 @@ public class Ticket {
     private TicketPriority priority;
 
     @CreatedBy // ilk atamada enjekte ediyor
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id", nullable = false, updatable = false)
     private User createdBy;
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_to_id", nullable = false)
     private User assignedTo;
 
     @LastModifiedBy // Her güncellendiğinde kullanıcıyı otomatik günceller
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "updated_by_id")
     private User updatedBy;
 

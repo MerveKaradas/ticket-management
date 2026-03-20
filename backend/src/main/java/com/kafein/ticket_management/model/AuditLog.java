@@ -15,6 +15,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,7 +24,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "audit_logs")
+@Table(name = "audit_logs", indexes = {
+    @Index(name ="idx_performed_by", columnList = "performed_by"),
+    @Index(name ="idx_created_at_date", columnList = "created_at_date")
+})
 @Setter
 @Getter
 @NoArgsConstructor
@@ -53,7 +57,7 @@ public class AuditLog {
     private String errorMessage; // Eğer hata varsa sebebi
 
     @CreatedDate
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at_date",nullable = false, updatable = false)
     private LocalDateTime createdAtDate;
 
 }

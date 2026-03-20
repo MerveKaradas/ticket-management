@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -30,4 +31,8 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID>, JpaSpecif
            "WHERE t.updatedDate >= :startOfDay " +
            "GROUP BY t.status")
     List<Object[]> countDailyTrendByStatus(@Param("startOfDay") LocalDateTime startOfDay);
+
+    @EntityGraph(attributePaths = {"createdBy","assignedTo","updated_by_id"})
+    List<Ticket> findAll();
+
 }
