@@ -34,7 +34,7 @@ const Dashboard = () => {
         const statusData = data.eachStatusTotalTicketsCount || {};
         const priorityData = data.totalPriority || {};
 
-        const activeTickets = (statusData.OPEN || 0) +
+        const activeTickets =
           (statusData.IN_PROGRESS || 0) +
           (statusData.REOPENED || 0);
 
@@ -62,7 +62,8 @@ const Dashboard = () => {
     'DONE': '#00C49F',        
     'IN_PROGRESS': '#0088FE', 
     'OPEN': '#FFBB28',    
-    'REOPENED': '#FF8042'         
+    'REOPENED': '#FF8042',
+    'BACKLOG' :'#8884d8'
   };
 
   if (loading) return <div className="p-8 text-gray-500 font-medium">Veriler yükleniyor...</div>;
@@ -131,7 +132,7 @@ const Dashboard = () => {
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${ticket.status === 'DONE' ? 'bg-green-50 text-green-600' :
                       ticket.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-600' :
                         ticket.status === 'OPEN' ? 'bg-orange-100 text-orange-600' :
-                          'bg-red-50 text-red-600'
+                          'bg-violet-50 text-violet-600'
                     }`}>
                     {ticket.status}
                   </span>

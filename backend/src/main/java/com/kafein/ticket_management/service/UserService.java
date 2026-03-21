@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -19,6 +20,7 @@ import com.kafein.ticket_management.aop.Audit;
 import com.kafein.ticket_management.dto.request.RequestCreateUserDto;
 import com.kafein.ticket_management.dto.response.ResponseUserDto;
 import com.kafein.ticket_management.dto.response.ResponseUserForAssignmentDto;
+import com.kafein.ticket_management.event.user.UserDeletedEvent;
 import com.kafein.ticket_management.exception.ResourceNotFoundException;
 import com.kafein.ticket_management.exception.UnauthorizedException;
 import com.kafein.ticket_management.exception.UserAlreadyExistsException;
@@ -35,11 +37,14 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder,
+            ApplicationEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -48,7 +53,7 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }
 
-    @Transactional 
+    @Transactional
     @Audit(action = "USER_CREATED")
     public ResponseUserDto createUser(RequestCreateUserDto requestCreateUserDto) {
 
@@ -73,15 +78,16 @@ public class UserService implements UserDetailsService {
         return userRepository.findById(userId);
     }
 
-    public Optional<User> getUserByEmail(String email){
+    public Optional<User> getUserByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
     @Transactional
     public void createAdminUser() {
-        if (!userRepository.existsByEmail("admin@kafein.com")) {
+        String adminEmail = "admin@kafein.com";
+        if (!userRepository.existsByEmail(adminEmail)) {
             User admin = User.builder()
-                    .email("admin@kafein.com")
+                    .email(adminEmail)
                     .password(passwordEncoder.encode("Adminkafein123!"))
                     .role(Role.ADMIN)
                     .name("Admin")
@@ -91,7 +97,29 @@ public class UserService implements UserDetailsService {
         }
     }
 
-    public Page<ResponseUserDto> getAllUsers(String query,Pageable pageable) {
+    @Transactional
+    public void createSystemPool() {
+        String poolEmail = "unassignedpool@kafein.com";
+
+        if (!userRepository.existsByEmail(poolEmail)) {
+            User systemPool = User.builder()
+                    .email(poolEmail)
+                    .password(passwordEncoder.encode("Unassignedpool123!"))
+                    .role(Role.SYSTEM)
+                    .name("Unassigned")
+                    .surname("Pool")
+                    .active(false)
+                    .build();
+            userRepository.save(systemPool);
+        }
+    }
+
+    public User getSystemPool(){
+        return userRepository.findByEmail("unassignedpool@kafein.com")
+            .orElseThrow(() -> new RuntimeException("Sistem havuz kullanıcısı bulunamadı!"));
+    }
+
+    public Page<ResponseUserDto> getAllUsers(String query, Pageable pageable) {
         if (!isAdmin()) {
             throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
         }
@@ -99,7 +127,7 @@ public class UserService implements UserDetailsService {
         String searchQuery = (query != null && !query.trim().isEmpty()) ? query : null;
 
         return userRepository.searchUsers(searchQuery, pageable)
-            .map(user -> userMapper.toDto(user));
+                .map(user -> userMapper.toDto(user));
     }
 
     public User getCurrentUser() {
@@ -129,30 +157,44 @@ public class UserService implements UserDetailsService {
     public List<ResponseUserForAssignmentDto> getAllUsersForAssignment() {
         return userRepository.findAll()
                 .stream()
-                .filter(user -> user.getRole() == Role.USER || user.getRole() == Role.ADMIN)
+                .filter(user -> user.isActive() == true)
                 .map(user -> userMapper.toUserForAssignmentDto(user))
                 .toList();
     }
 
     public ResponseUserDto getUser() {
         return userMapper.toDto(getCurrentUser());
-        
+
     }
 
-    public Long totalUserCount(){
+    public Long totalUserCount() {
         return userRepository.count();
     }
 
     @Transactional
-    public void deleteUserById(UUID id) {
-        User currentUser = getCurrentUser();
-        boolean isAdmin = currentUser.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    @Audit(action = "USER_DELETED")
+    public void softDelete(UUID id) {
 
-        if (isAdmin) {
-            userRepository.deleteById(id);
+        if (!isAdmin()) {
+            throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
         }
-        
+
+        User deletedUser = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+
+        if (deletedUser.getEmail().equals("admin@kafein.com")) {
+            throw new RuntimeException("Root admin kullanıcısını silemezsiniz!");
+        }
+
+        deletedUser.setActive(false);
+
+        userRepository.save(deletedUser);
+
+        String fullName = String.format("%s %s", deletedUser.getName(), deletedUser.getSurname());
+        UserDeletedEvent event = new UserDeletedEvent(id, deletedUser.getEmail(), fullName);
+
+        eventPublisher.publishEvent(event);
+
     }
 
 }

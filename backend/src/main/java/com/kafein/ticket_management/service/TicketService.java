@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +24,7 @@ import com.kafein.ticket_management.dto.request.RequestTicketDto;
 import com.kafein.ticket_management.dto.request.TicketStatusUpdateRequestDto;
 import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
 import com.kafein.ticket_management.dto.response.ResponseTicketDto;
+import com.kafein.ticket_management.event.user.UserDeletedEvent;
 import com.kafein.ticket_management.exception.BusinessException;
 import com.kafein.ticket_management.exception.ResourceNotFoundException;
 import com.kafein.ticket_management.mapper.TicketMapper;
@@ -310,4 +312,26 @@ public class TicketService {
 
         return trendMap;
     }
+
+    @EventListener
+    @Transactional
+    public void handleUserDeleted(UserDeletedEvent event) {
+
+        User systemPool = userService.getSystemPool();
+
+        // Kullanıcının sadece tamamlanmamış biletleri
+        List<Ticket> activeTickets = ticketRepository.findAllByassignedTo_IdAndStatusNot(
+            event.getUserId(), TicketStatus.DONE
+        );
+        
+        activeTickets.forEach(ticket -> {
+            ticket.setStatus(TicketStatus.BACKLOG);
+            ticket.setAssignedTo(systemPool); 
+            String newTitle ="Atama bekliyor!";
+            ticket.setTitle(newTitle);
+        }); 
+
+        ticketRepository.saveAll(activeTickets);
+    }
+
 }

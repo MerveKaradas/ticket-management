@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { getAllUsers } from '../services/AdminService';
 import { deleteUser } from '../services/UserService';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import { toast } from 'react-toastify';
+
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -38,7 +40,11 @@ const UserManagement = () => {
   const handleConfirmDelete = async () => {
     setIsModalOpen(false);
     try {
-      alert(`ID: ${selectedUserId} olan kullanıcı için silme komutu gönderildi (Soft Delete bekleniyor).`);
+      const response = await deleteUser(selectedUserId);
+      if (response.status === 200 || response.status === 200) {
+        fetchUsers();
+        toast.success('Kullanıcı başarıyla silindi!');
+      }
     } catch (err) {
       alert("Silme başarısız!");
       console.log(err.message);
@@ -118,8 +124,10 @@ const UserManagement = () => {
 
                     {/* Rol */}
                     <td className="px-6 py-4 text-center w-1/5">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${user.role === 'ADMIN'
-                        ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        user.role === 'ADMIN' ? 'bg-violet-50 text-violet-600 border border-violet-100' :
+                        user.role === 'SYSTEM' ? 'bg-slate-50 text-slate-600 border border-slate-100' :
+                        'bg-blue-50 text-blue-600 border border-blue-100'
                         }`}>
                         {user.role}
                       </span>
@@ -128,18 +136,21 @@ const UserManagement = () => {
 
                     {/* Durum */}
                     <td className="px-6 py-4 text-center w-1/5">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-600
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold  ${user.active === true ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                       }`}>
-                        ✓ AKTİF
+                        {user.active === true ? '✓ AKTİF' : '✕ AKTİF DEĞİL'}
                       </span>
                     </td>
 
                     {/* Aksiyonlar */}
                     <td className="px-6 py-4 text-right w-1/5">
                       <div className="flex justify-end gap-2">
+                        {user.active && user.role !== "SYSTEM" && user.email.toLowerCase() !== "admin@kafein.com" && (
                         <button className="p-2 hover:bg-gray-100 rounded-xl transition-all text-gray-400 hover:text-blue-600" title="Düzenle">
                           ⚙️
                         </button>
+                        )}
+                        {user.active && user.email.toLowerCase() !== "admin@kafein.com" && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -147,7 +158,9 @@ const UserManagement = () => {
                           }}
                           className="p-2 hover:bg-red-50 rounded-xl transition-all text-gray-400 hover:text-red-600" title="Sil">
                           🗑️
+                          
                         </button>
+                        )}
                       </div>
                     </td>
                   </tr>

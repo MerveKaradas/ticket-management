@@ -9,6 +9,7 @@ public record ResponseUserDto(
     String name,
     String surname,
     String email,
+    boolean active,
     Role role
 ) {
     

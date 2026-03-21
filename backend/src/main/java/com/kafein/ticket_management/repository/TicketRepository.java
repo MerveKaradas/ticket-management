@@ -35,4 +35,6 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID>, JpaSpecif
     @EntityGraph(attributePaths = {"createdBy","assignedTo","updated_by_id"})
     List<Ticket> findAll();
 
+    List<Ticket> findAllByassignedTo_IdAndStatusNot(UUID userId, TicketStatus done);
+
 }

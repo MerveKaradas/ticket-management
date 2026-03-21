@@ -5,6 +5,7 @@ import java.util.Map;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -49,20 +50,24 @@ public class AuthService {
         User user = userService.getUserByEmail(requestLoginDto.email())
                 .orElseThrow(() -> {
                     // Email bulunamazsa log at ve hata fırlat
-                    auditLogService.createLog("USER_LOGIN", 
-                                            requestLoginDto.email(), 
-                                            AuditLogStatus.FAILED,
-                                "Geçersiz email denemesi.", 
-                                "Kullanıcı bulunamadı!");
+                    auditLogService.createLog("USER_LOGIN",
+                            requestLoginDto.email(),
+                            AuditLogStatus.FAILED,
+                            "Geçersiz email denemesi.",
+                            "Kullanıcı bulunamadı!");
                     return new BadCredentialsException("Email veya şifre hatalı");
                 });
 
+        if (!user.isActive()) {
+            throw new DisabledException("Hesabınız deaktif.");
+        }
+
         if (!passwordEncoder.matches(requestLoginDto.password(), user.getPassword())) {
-            auditLogService.createLog("USER_LOGIN", 
-                                        requestLoginDto.email(), 
-                                        AuditLogStatus.FAILED,
-                                "Hatalı şifre denemesi.", 
-                             "Geçersiz password!");
+            auditLogService.createLog("USER_LOGIN",
+                    requestLoginDto.email(),
+                    AuditLogStatus.FAILED,
+                    "Hatalı şifre denemesi.",
+                    "Geçersiz password!");
             throw new BadCredentialsException("Email veya şifre hatalı");
         }
         Map<String, String> tokens = tokenService.generateToken(user);

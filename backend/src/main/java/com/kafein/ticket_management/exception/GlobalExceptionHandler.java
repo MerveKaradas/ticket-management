@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -89,6 +90,12 @@ public class GlobalExceptionHandler {
                         HttpServletRequest request) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
                                 .body(buildError(HttpStatus.CONFLICT, ex.getMessage(), request));
+        }
+
+        @ExceptionHandler(DisabledException.class)
+        public ResponseEntity<String> handleDisabledAccount(DisabledException ex) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                .body("Hesabınız pasife alınmıştır.");
         }
 
         @ExceptionHandler(Exception.class)

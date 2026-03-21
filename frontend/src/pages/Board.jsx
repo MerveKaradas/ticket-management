@@ -66,7 +66,7 @@ const Board = () => {
 
   const columns = [
     { title: 'REOPEN', statuses: ['REOPENED'], color: 'bg-orange-50/50' },
-    { title: 'OPEN', statuses: ['OPEN'], color: 'bg-gray-100/50' },
+    { title: 'OPEN/BACKLOG', statuses: ['OPEN','BACKLOG'], color: 'bg-gray-100/50' },
     { title: 'IN PROGRESS', statuses: ['IN_PROGRESS'], color: 'bg-blue-50/50' },
     { title: 'DONE', statuses: ['DONE', 'COMPLETED', 'CLOSED'], color: 'bg-green-50/50' }
   ];

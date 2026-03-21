@@ -23,7 +23,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
 
-
     public JwtAuthFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
@@ -46,7 +45,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         try {
-            //SecurityContext içinde zaten bir kullanıcı varsa tekrar kontrol etmeye gerek yok
+            // SecurityContext içinde zaten bir kullanıcı varsa tekrar kontrol etmeye gerek
+            // yok
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
 
                 if (jwtUtil.validateToken(token)) {
@@ -54,12 +54,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     UserDetails userDetails = userDetailsService
                             .loadUserByUsername(jwtUtil.getUserEmailFromToken(token));
 
-                    var authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, 
-                        null,
-                        userDetails.getAuthorities());
+                    if (!userDetails.isEnabled()) {
+                        log.warn("Deaktif kullanıcı erişim denemesi: {}", userDetails.getUsername());
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN); 
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write("{\"error\": \"Hesabınız deaktif edilmiştir.\"}");
+                        return; 
+                    }
 
-                    //istek detayları
+                    var authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities());
+
+                    // istek detayları
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                     SecurityContextHolder.getContext().setAuthentication(authToken);

@@ -63,6 +63,10 @@ public class User implements UserDetails {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean active = true;
+
     // Security yetki kontrolü için kullanıcı rolü
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -92,6 +96,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true; // Kullanıcı aktif
+        return this.active; // Kullanıcı aktif
     }
 }

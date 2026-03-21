@@ -1,7 +1,12 @@
 const StatsPanel = ({ stats }) => {
+  const stat = stats.statusDistribution;
+  const done = stat.find(i => i.name === 'DONE')?.value || 0;
+  const total = stats.total || 0;
 
-  const completedPercent = Math.trunc(((stats.total - stats.active) / stats.total) * 100) || 0;
-  
+  const completedPercent = total > 0 
+    ? parseFloat(((done / total) * 100).toFixed(2))
+    : 0;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">

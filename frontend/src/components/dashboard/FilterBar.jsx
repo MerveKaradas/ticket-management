@@ -83,6 +83,7 @@ const FilterBar = ({ filters, setFilters, users, currentUser, onOpenCreateModal 
                     <option value="">Tümü</option>
                     <option value="REOPENED">REOPENED</option>
                     <option value="OPEN">OPEN</option>
+                    <option value="BACKLOG">BACKLOG</option>
                     <option value="IN_PROGRESS">IN_PROGRESS</option>
                     <option value="DONE">DONE</option>
                   </select>

@@ -104,6 +104,7 @@ const TicketManagement = () => {
                         <option value="" >Tüm Durumlar</option>
                         <option value="REOPENED">REOPENED</option>
                         <option value="OPEN">OPEN</option>
+                        <option value="BACKLOG">BACKLOG</option>
                         <option value="IN_PROGRESS">IN PROGRESS</option>
                         <option value="DONE">DONE</option>
                     </select>
