@@ -7,7 +7,7 @@ export const getAllTickets = () => {
     } catch (error) {
         console.error("Hata :", err);
     }
-  
+
 };
 
 
@@ -17,7 +17,7 @@ export const deleteAllTickets = () => {
     } catch (error) {
         console.error("Hata :", err);
     }
-  
+
 };
 
 
@@ -27,7 +27,7 @@ export const deleteTicket = (id) => {
     } catch (error) {
         console.error("Hata :", err);
     }
-  
+
 };
 
 
@@ -40,4 +40,15 @@ export const filterTickets = (title, status, priority, page, size) => {
         ...(priority && { priority })
     });
     return Api.get(`/tickets/filter?${params.toString()}`);
+};
+
+export const claimTicket = async (ticketId, claimTitle) => {
+    try {
+        return await Api.post(`/tickets/${ticketId}/claim`, {
+            newTitle: claimTitle
+        });
+    } catch (error) {
+        console.error("Bilet üstlenilemedi:", error);
+        throw error;
+    }
 };

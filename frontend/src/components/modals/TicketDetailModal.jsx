@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import Api from '../../services/Api';
 import { toast } from 'react-toastify';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { claimTicket } from '../../services/TicketService';
 
 const TicketDetailModal = () => {
     const { ticketId } = useParams();
-    const [ticketData, setTicketData] = useState(null); 
+    const [ticketData, setTicketData] = useState(null);
     const [comments, setComments] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
     const [users, setUsers] = useState([]);
@@ -20,6 +21,9 @@ const TicketDetailModal = () => {
     const [newComment, setNewComment] = useState('');
     const { currentUser, refreshTickets } = useOutletContext();
 
+    const [isClaiming, setIsClaiming] = useState(false);
+    const [claimTitle, setClaimTitle] = useState("");
+
     const navigate = useNavigate();
     const onClose = () => navigate('/board');
 
@@ -32,6 +36,7 @@ const TicketDetailModal = () => {
                 setTicketData(data);
 
                 setEditedTitle(data.title);
+                setClaimTitle(data.title);
                 setEditedDescription(data.description);
                 setEditedStatus(data.status);
                 setEditedPriority(data.priority);
@@ -42,6 +47,8 @@ const TicketDetailModal = () => {
         };
         fetchTicket();
     }, [ticketId]);
+
+
 
     // Yorumlar
     const fetchLatestData = useCallback(async () => {
@@ -92,7 +99,7 @@ const TicketDetailModal = () => {
             if (response.status === 200 || response.status === 204) {
                 toast.success("Yorum silindi 🗑️");
                 setDeleteConfirmId(null);
-                fetchLatestData(); // Listeyi yenile
+                fetchLatestData();
             }
         } catch (err) {
             toast.error("Silme yetkiniz yok.");
@@ -110,6 +117,7 @@ const TicketDetailModal = () => {
             </div>
         );
     }
+
 
     const isCreator = currentUser?.id === ticketData.createdBy?.id;
     const isAssignee = currentUser?.id === ticketData.assignedTo?.id;
@@ -160,9 +168,6 @@ const TicketDetailModal = () => {
         setIsEditing(false);
     };
 
-
-
-
     const formatDate = (dateString) => {
         if (!dateString) return "Belirtilmedi";
         return new Date(dateString).toLocaleString('tr-TR', {
@@ -171,23 +176,81 @@ const TicketDetailModal = () => {
     };
 
 
+    const isUnassigned = ticketData.assignedTo?.role === 'SYSTEM';
+
+    const handleFinalClaim = async () => {
+        if (!claimTitle.trim()) {
+            toast.error("Lütfen bir başlık girin!");
+            return;
+        }
+        try {
+            const response = await claimTicket(ticketData.id, claimTitle);
+            if (response) {
+                toast.success("Bilet başarıyla üstlenildi! ✨");
+                setIsEditing(false);
+                setTicketData(response.data || ticketData);
+                setIsClaiming(false);
+                if (refreshTickets) refreshTickets();
+            }
+
+        } catch (err) {
+            toast.error("Bilet üstlenilemedi!");
+        }
+    }
+
 
     return (
         <div className="absolute inset-0 bg-white z-[200] flex flex-col animate-in fade-in duration-200">
-            
+
             <div className="flex-1 flex overflow-hidden">
                 {/* SOL BLOK: Bilet Detayları */}
                 <div className="flex-[1.5] overflow-y-auto p-8 border-r custom-scrollbar">
                     <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
-                            {isEditing && isCreator ? (
-                                <input className="text-3xl font-bold text-gray-900 border-b-2 border-blue-500 outline-none w-full bg-transparent"
-                                    value={editedTitle} onChange={(e) => setEditedTitle(e.target.value)} />
+                            {(isClaiming || (isEditing && isCreator)) ? (
+                                <input
+                                    className="text-3xl font-bold text-gray-900 border-b-2 border-blue-500 outline-none w-full bg-transparent animate-pulse"
+                                    value={isClaiming ? claimTitle : editedTitle}
+                                    onChange={(e) => isClaiming ? setClaimTitle(e.target.value) : setEditedTitle(e.target.value)}
+                                    placeholder="Bilet için yeni bir başlık girin..."
+                                    autoFocus
+                                />
                             ) : (
-                                <h1 className="text-3xl font-bold text-gray-900 tracking-tight leading-tight">{ticketData.title}</h1>
+                                <h1 className="text-3xl font-bold text-gray-900 tracking-tight leading-tight">
+                                    {ticketData.title}
+                                </h1>
                             )}
                         </div>
-                        {canEdit && (
+
+                        {isUnassigned && (
+                            <div className="flex items-center space-x-2">
+                                {isClaiming ? (
+                                    <>
+                                        <button
+                                            onClick={() => setIsClaiming(false)}
+                                            className="px-4 py-2 text-gray-500 hover:text-red-500 font-bold text-sm"
+                                        >
+                                            Vazgeç
+                                        </button>
+                                        <button
+                                            onClick={() => handleFinalClaim()}
+                                            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-md font-bold text-sm"
+                                        >
+                                            Onayla ve Üstlen
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsClaiming(true)}
+                                        className="px-6 py-2 bg-[#0747A6] text-white rounded-lg hover:bg-[#0052CC] shadow-md font-bold text-sm"
+                                    >
+                                        Bileti Üstlen 
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {canEdit && !isUnassigned && (
                             <div className="ml-4 flex items-center space-x-2">
                                 {/* Sadece Düzenleme Modundayken Vazgeç Butonu Gözükür */}
                                 {isEditing && (
@@ -208,6 +271,7 @@ const TicketDetailModal = () => {
                                 </button>
                             </div>
                         )}
+
                     </div>
 
                     <div className="space-y-10">
@@ -317,7 +381,7 @@ const TicketDetailModal = () => {
                 {/* SAĞ BLOK: Yorumlar */}
                 <div className="flex-1 bg-gray-50/30 flex flex-col overflow-hidden">
                     <div className="p-4 flex justify-end">
-                        <button title ="Geri dön" onClick={onClose} className="flex items-center space-x-2 text-sm text-gray-500 hover:text-blue-600 transition-colors py-1 px-3 rounded-lg bg-gray-200 hover:bg-blue-100">
+                        <button title="Geri dön" onClick={onClose} className="flex items-center space-x-2 text-sm text-gray-500 hover:text-blue-600 transition-colors py-1 px-3 rounded-lg bg-gray-200 hover:bg-blue-100">
                             <span>←</span>
                             <span className="font-medium"> </span>
                         </button></div>

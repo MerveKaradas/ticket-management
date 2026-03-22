@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kafein.ticket_management.dto.request.RequestCreateTicketDto;
+import com.kafein.ticket_management.dto.request.RequestTicketClaimDto;
 import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
 import com.kafein.ticket_management.dto.response.ResponseTicketDto;
 import com.kafein.ticket_management.model.enums.TicketPriority;
@@ -110,5 +111,11 @@ public class TicketController {
     @PutMapping("/{id}")
     public ResponseEntity<ResponseTicketDto> updateTicket(@PathVariable("id") UUID ticketId, @RequestBody @Valid RequestTicketDto requestTicketDto){
         return ResponseEntity.ok(ticketService.updateTicket(ticketId,requestTicketDto));
+    }
+
+    @Operation(summary = "Sahipsiz Biletleri Üstlenme")
+    @PostMapping("/{ticketId}/claim")
+    public ResponseEntity<ResponseTicketDto> createTicket(@PathVariable UUID ticketId, @RequestBody RequestTicketClaimDto claimDto){
+        return ResponseEntity.ok(ticketService.claimTicket(ticketId,claimDto));
     }
 }

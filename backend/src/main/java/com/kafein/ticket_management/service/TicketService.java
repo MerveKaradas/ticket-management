@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import com.kafein.ticket_management.aop.Audit;
 import com.kafein.ticket_management.dto.request.RequestCreateTicketDto;
+import com.kafein.ticket_management.dto.request.RequestTicketClaimDto;
 import com.kafein.ticket_management.dto.request.RequestTicketDto;
 import com.kafein.ticket_management.dto.request.TicketStatusUpdateRequestDto;
 import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
@@ -30,6 +31,7 @@ import com.kafein.ticket_management.exception.ResourceNotFoundException;
 import com.kafein.ticket_management.mapper.TicketMapper;
 import com.kafein.ticket_management.model.Ticket;
 import com.kafein.ticket_management.model.User;
+import com.kafein.ticket_management.model.enums.Role;
 import com.kafein.ticket_management.model.enums.TicketPriority;
 import com.kafein.ticket_management.model.enums.TicketStatus;
 import com.kafein.ticket_management.repository.TicketRepository;
@@ -332,6 +334,24 @@ public class TicketService {
         }); 
 
         ticketRepository.saveAll(activeTickets);
+    }
+
+    @Transactional
+    @Audit(action = "TICKET_CLAIM")
+    public ResponseTicketDto claimTicket(UUID ticketId, RequestTicketClaimDto claimDto) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
+
+        if (ticket.getAssignedTo().getRole() != Role.SYSTEM) {
+            throw new AccessDeniedException("Bu bilet zaten bir kullanıcıya atanmış.");
+        }
+
+        ticket.setAssignedTo(userService.getCurrentUser());
+        ticket.setTitle(claimDto.newTitle());
+        ticket.setStatus(TicketStatus.IN_PROGRESS);
+        
+        Ticket updatedTicket = ticketRepository.save(ticket);
+        return ticketMapper.toDto(updatedTicket);
     }
 
 }
