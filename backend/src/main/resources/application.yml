@@ -5,8 +5,13 @@ spring:
     password: password
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate # flywayde kontrol
     show-sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    spring.flyway.locations: classpath:db/migration
+
 
   application:
     name: ticket-management
