@@ -1,21 +1,16 @@
 package com.kafein.ticket_management.service;
 
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.kafein.ticket_management.aop.Audit;
@@ -25,7 +20,6 @@ import com.kafein.ticket_management.dto.request.RequestTicketDto;
 import com.kafein.ticket_management.dto.request.TicketStatusUpdateRequestDto;
 import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
 import com.kafein.ticket_management.dto.response.ResponseTicketDto;
-import com.kafein.ticket_management.event.user.UserDeletedEvent;
 import com.kafein.ticket_management.exception.BusinessException;
 import com.kafein.ticket_management.exception.ResourceNotFoundException;
 import com.kafein.ticket_management.mapper.TicketMapper;
@@ -35,6 +29,7 @@ import com.kafein.ticket_management.model.enums.Role;
 import com.kafein.ticket_management.model.enums.TicketPriority;
 import com.kafein.ticket_management.model.enums.TicketStatus;
 import com.kafein.ticket_management.repository.TicketRepository;
+import com.kafein.ticket_management.spec.TicketSpecifications;
 
 import jakarta.transaction.Transactional;
 
@@ -72,11 +67,9 @@ public class TicketService {
 
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<ResponseTicketDto> getAllTickets() {
 
-        if (!userService.isAdmin()) {
-            throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
-        }
         return ticketRepository.findAll()
                 .stream()
                 .map((ticket) -> ticketMapper.toDto(ticket))
@@ -85,26 +78,21 @@ public class TicketService {
 
     @Transactional
     @Audit(action = "TICKET_DELETE_ALL")
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteAllTickets() {
-        if (userService.isAdmin()) {
-            ticketRepository.deleteAll();
-        } else {
-            throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
-        }
+
+        ticketRepository.deleteAll();
     }
 
     @Transactional
     @Audit(action = "TICKET_DELETE")
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteTicketById(UUID id) {
 
-        if (userService.isAdmin()) {
-            if (!ticketRepository.existsById(id)) {
-                throw new ResourceNotFoundException("Ticket", "id", id);
-            }
-            ticketRepository.deleteById(id);
-        } else {
-            throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
+        if (!ticketRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Ticket", "id", id);
         }
+        ticketRepository.deleteById(id);
     }
 
     public Page<ResponseTicketDto> filterTickets(String title, TicketStatus status, TicketPriority priority,
@@ -112,20 +100,10 @@ public class TicketService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAtDate").descending()); // nesne kullanma
 
-        Specification<Ticket> spec = Specification.where(null);
-
-        if (title != null && !title.trim().isEmpty()) {
-            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("title")), "%" + title.toLowerCase() + "%"));
-        }
-        if (status != null) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
-        }
-        if (priority != null) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("priority"), priority));
-        }
-        if (assignedToId != null) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("assignedTo").get("id"), assignedToId));
-        }
+        Specification<Ticket> spec = Specification.where(TicketSpecifications.hasTitle(title))
+                .and(TicketSpecifications.hasStatus(status))
+                .and(TicketSpecifications.hasPriority(priority))
+                .and(TicketSpecifications.hasAssignedTo(assignedToId));
 
         return ticketRepository.findAll(spec, pageable).map(ticketMapper::toDto);
     }
@@ -156,7 +134,6 @@ public class TicketService {
                 || (ticketStatus == TicketStatus.OPEN && requestStatus == TicketStatus.IN_PROGRESS)
                 || (ticketStatus == TicketStatus.IN_PROGRESS && requestStatus == TicketStatus.DONE)
                 || (ticketStatus == TicketStatus.DONE && requestStatus == TicketStatus.REOPENED);
-
     }
 
     @Transactional
@@ -179,11 +156,11 @@ public class TicketService {
                     ticket.setStatus(TicketStatus.REOPENED);
                 } else {
                     if (requestTicketDto.status() != null && !ticket.getStatus().equals(requestTicketDto.status())) {
-                            if (!isValidTransition(ticket.getStatus(), requestTicketDto.status())) {
-                                throw new BusinessException("Geçersiz statü geçişi!");
-                            } else {
-                                ticket.setStatus(requestTicketDto.status());
-                            }
+                        if (!isValidTransition(ticket.getStatus(), requestTicketDto.status())) {
+                            throw new BusinessException("Geçersiz statü geçişi!");
+                        } else {
+                            ticket.setStatus(requestTicketDto.status());
+                        }
                     }
                 }
 
@@ -207,131 +184,27 @@ public class TicketService {
 
     }
 
-    public Long totalTicketCount() {
-        return ticketRepository.count();
-    }
-
-    public Map<TicketStatus, Long> getEachStatusTotalTicketsCount() {
-        List<Object[]> results = ticketRepository.countTicketsByStatusRaw();
-        Map<TicketStatus, Long> statusMap = new HashMap<>();
-
-        // Default olarak statü bulunmayanları da koruma altında alıyoruz özellikle UI
-        // kullanımında önemli
-        for (TicketStatus status : TicketStatus.values()) {
-            statusMap.put(status, 0L);
-        }
-
-        for (Object[] result : results) {
-            TicketStatus status = (TicketStatus) result[0];
-            Long count = (Long) result[1];
-            statusMap.put(status, count);
-        }
-
-        return statusMap;
-    }
-
-    public List<ResponseTicketDto> getLast5Tickets() {
-        return ticketRepository.findTop5ByOrderByCreatedAtDateDesc()
-                .stream()
-                .map((ticket) -> ticketMapper.toDto(ticket))
-                .toList();
-    }
-
     public ResponseTicketDto getTicket(UUID id) {
         return ticketRepository.findById(id)
                 .map((ticket) -> ticketMapper.toDto(ticket))
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", id));
     }
 
-    public Map<TicketPriority, Long> getTotalPriority() {
-        List<Object[]> results = ticketRepository.countTicketsByPriorityRaw();
-        Map<TicketPriority, Long> priorityMap = new HashMap<>();
-
-        // Default olarak priority bulunmayanları da koruma altında alıyoruz özellikle
-        // UI
-        // kullanımında önemli
-        for (TicketPriority priority : TicketPriority.values()) {
-            priorityMap.put(priority, 0L);
-        }
-
-        for (Object[] result : results) {
-            TicketPriority priority = (TicketPriority) result[0];
-            Long count = (Long) result[1];
-            priorityMap.put(priority, count);
-        }
-
-        return priorityMap;
-    }
-
-    public Double calculateAverageResolveTime() {
-        // Sadece DONE
-        List<Ticket> resolvedTickets = ticketRepository.findAllByStatus(TicketStatus.DONE);
-
-        if (resolvedTickets.isEmpty()) {
-            return 0.0;
-        }
-
-        // Oluşturulma ve son güncellenme arasındaki farkı hesabı
-        long totalMinutes = resolvedTickets.stream()
-                .mapToLong(ticket -> {
-                    return java.time.Duration.between(
-                            ticket.getCreatedAtDate(),
-                            ticket.getUpdatedDate()).toMinutes();
-                })
-                .sum();
-
-        double averageMinutes = (double) totalMinutes / resolvedTickets.size();
-        double averageHours = averageMinutes / 60.0;
-
-        return Math.round(averageHours * 100.0) / 100.0;
-    }
-
-    public Map<String, Long> getUserWorkloadDistribution() {
-        List<Object[]> results = ticketRepository.countTicketsByFullAssigneeName();
-
-        return results.stream()
-                .collect(Collectors.toMap(
-                        result -> (String) result[0],
-                        result -> (Long) result[1]));
-    }
-
-    public Map<String, Long> getDailyTrendAnalysis() {
-        // Gün başlangıcı
-        LocalDateTime startOfDay = LocalDateTime.now().with(LocalTime.MIN);
-
-        List<Object[]> results = ticketRepository.countDailyTrendByStatus(startOfDay);
-
-        Map<String, Long> trendMap = new HashMap<>();
-
-        results.forEach(result -> {
-            trendMap.put(((TicketStatus) result[0]).name(), (Long) result[1]);
-        });
-
-        // Grafikte boşluk kalmasın diye tüm statüleri 0 ile başlatıyoruz
-        for (TicketStatus status : TicketStatus.values()) {
-            trendMap.putIfAbsent(status.name(), 0L);
-        }
-
-        return trendMap;
-    }
-
-    @EventListener
     @Transactional
-    public void handleUserDeleted(UserDeletedEvent event) {
+    public void updateAllTicketsByDeletedUserId(UUID userId) {
 
         User systemPool = userService.getSystemPool();
 
         // Kullanıcının sadece tamamlanmamış biletleri
         List<Ticket> activeTickets = ticketRepository.findAllByassignedTo_IdAndStatusNot(
-            event.getUserId(), TicketStatus.DONE
-        );
-        
+                userId, TicketStatus.DONE);
+
         activeTickets.forEach(ticket -> {
             ticket.setStatus(TicketStatus.BACKLOG);
-            ticket.setAssignedTo(systemPool); 
-            String newTitle ="Atama bekliyor!";
+            ticket.setAssignedTo(systemPool);
+            String newTitle = "Atama bekliyor!";
             ticket.setTitle(newTitle);
-        }); 
+        });
 
         ticketRepository.saveAll(activeTickets);
     }
@@ -349,7 +222,7 @@ public class TicketService {
         ticket.setAssignedTo(userService.getCurrentUser());
         ticket.setTitle(claimDto.newTitle());
         ticket.setStatus(TicketStatus.IN_PROGRESS);
-        
+
         Ticket updatedTicket = ticketRepository.save(ticket);
         return ticketMapper.toDto(updatedTicket);
     }

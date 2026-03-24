@@ -3,6 +3,7 @@ package com.kafein.ticket_management.service;
 import java.io.ByteArrayInputStream;
 import java.util.stream.Stream;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.kafein.ticket_management.dto.response.ResponseReportDto;
@@ -21,6 +22,7 @@ public class ReportService {
         this.exportFactory = exportFactory;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseReportDto generateAuditLogReport(String query, String format) {
 
         try (Stream<AuditLog> logStream = auditLogService.streamAll(query)) {

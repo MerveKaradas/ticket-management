@@ -1,5 +1,6 @@
 package com.kafein.ticket_management.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,5 +26,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             "LOWER(CAST(u.role AS text)) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%')) OR " +
             "LOWER(CONCAT(CAST(u.name AS text), ' ', CAST(u.surname AS text))) LIKE LOWER(CONCAT('%', CAST(:query AS text), '%')))")
     Page<User> searchUsers(@Param("query") String query, Pageable pageable);
+
+    List<User> findAllByActiveTrue();
 
 }

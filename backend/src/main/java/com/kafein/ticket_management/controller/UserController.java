@@ -8,7 +8,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,7 +47,6 @@ public class UserController {
     @Operation(summary = "Tüm Kullanıcıları Listeleme", 
                description = "Sadece 'ADMIN' yetkisine sahip olan kullanıcılar sistemde kayıtlı olan tüm kullanıcı listesini görünteyebilir.")
     @GetMapping("/getAllUsers")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<ResponseUserDto>> getAllUsers(
         @RequestParam(required = false) String query,
         @PageableDefault(
@@ -63,7 +61,6 @@ public class UserController {
     @Operation(summary = "Kullanıcı Silme", 
                 description = "Sadece 'ADMIN' yetkisine sahip olan kullanıcı belirli bir kullanıcıyı silebilir.")
     @DeleteMapping("/deleteUser/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUserById(@PathVariable UUID id){
         userService.softDelete(id);
         return ResponseEntity.ok().build();

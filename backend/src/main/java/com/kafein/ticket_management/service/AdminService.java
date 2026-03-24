@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,11 +22,13 @@ public class AdminService {
         this.auditLogService = auditLogService;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public Page<AuditLog> findAll(String query, Pageable pageable) {
         return auditLogService.findAll(query, pageable);
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public void revokeAllTokens() {
         tokenService.revokeAllTokens();
     }

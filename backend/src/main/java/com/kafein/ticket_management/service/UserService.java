@@ -7,12 +7,9 @@ import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -32,12 +29,14 @@ import com.kafein.ticket_management.repository.UserRepository;
 import jakarta.transaction.Transactional;
 
 @Service
-public class UserService implements UserDetailsService {
+public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
+    private static final String SYSTEM_POOL_EMAIL = "unassignedpool@kafein.com";
+    private static final String ROOT_ADMIN_EMAIL = "admin@kafein.com";
 
     public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder,
             ApplicationEventPublisher eventPublisher) {
@@ -45,12 +44,6 @@ public class UserService implements UserDetailsService {
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.eventPublisher = eventPublisher;
-    }
-
-    @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }
 
     @Transactional
@@ -84,10 +77,9 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public void createAdminUser() {
-        String adminEmail = "admin@kafein.com";
-        if (!userRepository.existsByEmail(adminEmail)) {
+        if (!userRepository.existsByEmail(ROOT_ADMIN_EMAIL)) {
             User admin = User.builder()
-                    .email(adminEmail)
+                    .email(ROOT_ADMIN_EMAIL)
                     .password(passwordEncoder.encode("Adminkafein123!"))
                     .role(Role.ADMIN)
                     .name("Admin")
@@ -99,11 +91,9 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public void createSystemPool() {
-        String poolEmail = "unassignedpool@kafein.com";
-
-        if (!userRepository.existsByEmail(poolEmail)) {
+        if (!userRepository.existsByEmail(SYSTEM_POOL_EMAIL)) {
             User systemPool = User.builder()
-                    .email(poolEmail)
+                    .email(SYSTEM_POOL_EMAIL)
                     .password(passwordEncoder.encode("Unassignedpool123!"))
                     .role(Role.SYSTEM)
                     .name("Unassigned")
@@ -114,15 +104,13 @@ public class UserService implements UserDetailsService {
         }
     }
 
-    public User getSystemPool(){
-        return userRepository.findByEmail("unassignedpool@kafein.com")
-            .orElseThrow(() -> new RuntimeException("Sistem havuz kullanıcısı bulunamadı!"));
+    public User getSystemPool() {
+        return userRepository.findByEmail(SYSTEM_POOL_EMAIL)
+                .orElseThrow(() -> new RuntimeException("Sistem havuz kullanıcısı bulunamadı!"));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public Page<ResponseUserDto> getAllUsers(String query, Pageable pageable) {
-        if (!isAdmin()) {
-            throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
-        }
 
         String searchQuery = (query != null && !query.trim().isEmpty()) ? query : null;
 
@@ -142,22 +130,9 @@ public class UserService implements UserDetailsService {
         return currentUser;
     }
 
-    public boolean isAdmin() {
-        User currentUser = getCurrentUser();
-
-        boolean isAdmin = currentUser.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-        if (isAdmin) {
-            return true;
-        }
-        return false;
-    }
-
     public List<ResponseUserForAssignmentDto> getAllUsersForAssignment() {
-        return userRepository.findAll()
+        return userRepository.findAllByActiveTrue()
                 .stream()
-                .filter(user -> user.isActive() == true)
                 .map(user -> userMapper.toUserForAssignmentDto(user))
                 .toList();
     }
@@ -173,16 +148,13 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     @Audit(action = "USER_DELETED")
+    @PreAuthorize("hasRole('ADMIN')")
     public void softDelete(UUID id) {
-
-        if (!isAdmin()) {
-            throw new AccessDeniedException("Bu işlemi yapmak için ADMIN yetkisine sahip olmalısınız!");
-        }
 
         User deletedUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
 
-        if (deletedUser.getEmail().equals("admin@kafein.com")) {
+        if (deletedUser.getEmail().equals(ROOT_ADMIN_EMAIL)) {
             throw new RuntimeException("Root admin kullanıcısını silemezsiniz!");
         }
 

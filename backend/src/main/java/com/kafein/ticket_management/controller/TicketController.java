@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -53,7 +52,6 @@ public class TicketController {
     @Operation(summary = "Tüm Biletleri Görüntüleme", 
                 description = "Sadece 'ADMIN' yetkisine sahip olan kullanıcı tüm biletleri görünteyebilir.")
     @GetMapping("/getAllTickets")
-    @PreAuthorize("hasRole('ADMIN')") 
     public ResponseEntity<List<ResponseTicketDto>> getAllTickets(){
         return ResponseEntity.ok(ticketService.getAllTickets());
     }
@@ -67,7 +65,6 @@ public class TicketController {
     @Operation(summary = "Tüm Biletleri Silme", 
                 description = "Sadece 'ADMIN' yetkisine sahip olan kullanıcı tüm biletleri silebilir.")
     @DeleteMapping("/deleteAllTickets")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteAllTickets(){
         ticketService.deleteAllTickets();
         return ResponseEntity.ok().build();
@@ -77,7 +74,6 @@ public class TicketController {
     @Operation(summary = "Bilet Silme", 
                 description = "Sadece 'ADMIN' yetkisine sahip olan kullanıcı belirli bir bileti silebilir.")
     @DeleteMapping("/deleteTicket/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteTicketById(@PathVariable UUID id){
         ticketService.deleteTicketById(id);
         return ResponseEntity.ok().build();
