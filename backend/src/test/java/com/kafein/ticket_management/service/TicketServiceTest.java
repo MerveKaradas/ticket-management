@@ -4,9 +4,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,17 +17,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mapstruct.factory.Mappers;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 
 import com.kafein.ticket_management.dto.request.RequestCreateTicketDto;
+import com.kafein.ticket_management.dto.request.RequestTicketClaimDto;
 import com.kafein.ticket_management.dto.request.RequestTicketDto;
 import com.kafein.ticket_management.dto.request.TicketStatusUpdateRequestDto;
 import com.kafein.ticket_management.dto.response.ResponseCreateTicketDto;
@@ -40,11 +45,18 @@ import com.kafein.ticket_management.model.enums.TicketPriority;
 import com.kafein.ticket_management.model.enums.TicketStatus;
 import com.kafein.ticket_management.repository.TicketRepository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.*;
+
+import static com.kafein.ticket_management.util.TestDataFactory.createTestUser;
+import static com.kafein.ticket_management.util.TestDataFactory.createSystemPoolUser;
+import static com.kafein.ticket_management.util.TestDataFactory.createTestTicket;
 
 @ExtendWith(MockitoExtension.class) // Junit'i Mockito ile genişletiyoruz yoksa mock içleri null kalır
 public class TicketServiceTest {
@@ -64,30 +76,43 @@ public class TicketServiceTest {
     @InjectMocks
     private TicketService ticketService;
 
+    @Captor
+    private ArgumentCaptor<Ticket> ticketArgumentCaptor;
+
+    @Captor
+    private ArgumentCaptor<List<Ticket>> ticketListCaptor;
+
+    @Captor
+    private ArgumentCaptor<Pageable> pageableCaptor;
+
     @Test
     void createTicket_WhenUserExists_ShouldReturnResponse() {
 
         // ARRANGE
-        UUID userId = UUID.randomUUID();
-        User user = createUser(userId);
+        User user = createTestUser();
         RequestCreateTicketDto requestCreateTicketDto = new RequestCreateTicketDto("Title", "Description",
-                TicketPriority.LOW, userId);
-        Ticket ticket = createTicket(user, requestCreateTicketDto);
-        ResponseCreateTicketDto expectedTicketDto = ticketMapper.toCreateTicketDto(ticket);
+                TicketPriority.LOW, user.getId());
 
-        given(userService.getUserById(userId)).willReturn(Optional.of(user));
+        Ticket ticket = createTestTicket(user, requestCreateTicketDto);
+
+        given(userService.getUserById(user.getId())).willReturn(Optional.of(user));
         given(ticketRepository.save(any(Ticket.class))).willReturn(ticket);
 
         // ACT
         ResponseCreateTicketDto result = ticketService.createTicket(requestCreateTicketDto);
 
         // ASSERT
-        assertEquals(expectedTicketDto.title(), result.title());
-        assertEquals(expectedTicketDto.description(), result.description());
-        assertEquals(expectedTicketDto.status(), result.status());
-        assertEquals(expectedTicketDto.priority(), result.priority());
-        assertEquals(expectedTicketDto.assignedTo(), result.assignedTo());
-        verify(ticketRepository, times(1)).save(any(Ticket.class));
+        verify(ticketRepository, times(1)).save(ticketArgumentCaptor.capture());
+        Ticket capturedTicket = ticketArgumentCaptor.getValue();
+
+        assertThat(capturedTicket)
+                .usingRecursiveComparison()
+                .ignoringFields("id")
+                .isEqualTo(ticket);
+
+        assertThat(capturedTicket.getStatus()).isEqualTo(TicketStatus.OPEN);
+
+        verifyNoMoreInteractions(ticketRepository);
 
     }
 
@@ -102,9 +127,11 @@ public class TicketServiceTest {
         given(userService.getUserById(userId)).willReturn(Optional.empty());
 
         // ACT ve ASSERT
-        assertThrows(ResourceNotFoundException.class, () -> {
+        assertThatThrownBy(() -> {
             ticketService.createTicket(requestDto);
-        });
+        })
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasNoCause(); 
 
         verify(ticketRepository, never()).save(any(Ticket.class));
         // Mapper'a da hiç gidilmemeli
@@ -112,13 +139,13 @@ public class TicketServiceTest {
 
     }
 
+    // INFO : Yetki kontrolü için spring'in ayakta olması gerekir, slice testte kontrol sağlanacak
     @Test
     void deleteTicket_AsAdmin_ShouldSucceed() {
 
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
 
-        given(userService.isAdmin()).willReturn(true);
         given(ticketRepository.existsById(ticketId)).willReturn(true);
 
         // ACT
@@ -126,25 +153,7 @@ public class TicketServiceTest {
 
         // ASSERT
         verify(ticketRepository, times(1)).deleteById(ticketId);
-
-    }
-
-    @Test
-    void deleteTicket_AsUser_ThrowsException() {
-
-        // ARRANGE
-        UUID ticketId = UUID.randomUUID();
-
-        given(userService.isAdmin()).willReturn(false);
-
-        // ACT ve ASSERT
-
-        assertThrows(AccessDeniedException.class, () -> {
-            ticketService.deleteTicketById(ticketId);
-        });
-
-        verify(ticketRepository, never()).deleteById(ticketId);
-
+        verifyNoMoreInteractions(ticketRepository);
     }
 
     @Test
@@ -152,107 +161,80 @@ public class TicketServiceTest {
 
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
-
-        given(userService.isAdmin()).willReturn(true);
         given(ticketRepository.existsById(ticketId)).willReturn(false);
 
         // ACT ve ASSERT
-
-        assertThrows(ResourceNotFoundException.class, () -> {
+        assertThatThrownBy(() -> {
             ticketService.deleteTicketById(ticketId);
-        });
+        })
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasNoCause();
 
         verify(ticketRepository, never()).deleteById(ticketId);
+        verifyNoMoreInteractions(ticketRepository);
 
     }
 
+    // INFO : Yetki kontrolü için spring'in ayakta olması gerekir, slice testte kontrol sağlanacak
     @Test
     void deleteAllTickets_AsAdmin_ShouldSucceed() {
-
-        // ARRANGE
-        given(userService.isAdmin()).willReturn(true);
 
         // ACT
         ticketService.deleteAllTickets();
 
         // ASSERT
         verify(ticketRepository, times(1)).deleteAll();
+        verifyNoMoreInteractions(ticketRepository);
 
     }
 
-    @Test
-    void deleteAllTickets_AsUser_ThrowsException() {
-
-        // ARRANGE
-        given(userService.isAdmin()).willReturn(false);
-
-        // ACT ASSERT
-        assertThrows(AccessDeniedException.class, () -> {
-            ticketService.deleteAllTickets();
-        });
-
-        verify(ticketRepository, never()).deleteAll();
-
-    }
-
+    // INFO : Yetki kontrolü için spring'in ayakta olması gerekir slice testte kontrol sağlanacak
     @Test
     void getAllTickets_AsAdmin_ShouldReturnList() {
 
         // ARRANGE
-        given(userService.isAdmin()).willReturn(true);
+        User user = createTestUser();
+        Ticket ticket1 = createTestTicket(user);
+        Ticket ticket2 = createTestTicket(user);
+        List<Ticket> ticketList = List.of(ticket1, ticket2);
+        given(ticketRepository.findAll()).willReturn(ticketList);
 
         // ACT
-        ticketService.getAllTickets();
+        var result = ticketService.getAllTickets();
 
         // ASSERT
+        assertThat(result)
+                .as("Dönen bilet listesi boş olmamalı ve beklenen sayıda bilet içermeli")
+                .isNotEmpty()
+                .hasSize(2);
+
         verify(ticketRepository, times(1)).findAll();
-    }
-
-    @Test
-    void getAllTickets_AsUser_ThrowsException() {
-
-        // ASSERT
-        given(userService.isAdmin()).willReturn(false);
-
-        // ACT ASSERT
-        assertThrows(AccessDeniedException.class, () -> {
-            ticketService.getAllTickets();
-        });
-
-        verify(ticketRepository, never()).findAll();
-
+        verify(ticketMapper, times(2)).toDto(any(Ticket.class)); 
+        verifyNoMoreInteractions(ticketRepository);
     }
 
     @Test
     void updateStatus_WhenUserNotAssigned_ThrowsException() {
         // ARRANGE
-        UUID ticketId = UUID.randomUUID();
-        UUID otherUserId = UUID.randomUUID();
-        UUID assigneeId = UUID.randomUUID();
-
-        User assignee = createUser(assigneeId);
-        User currentUser = createUser(otherUserId);
+        User assignee = createTestUser();
+        User currentUser = createTestUser();
         TicketStatus status = TicketStatus.IN_PROGRESS;
         TicketStatusUpdateRequestDto dtoStatus = new TicketStatusUpdateRequestDto(status);
 
-        Ticket ticket = Ticket.builder()
-                .id(ticketId)
-                .assignedTo(assignee)
-                .status(status)
-                .build();
+        Ticket ticket = createTestTicket(assignee, status);
 
-        given(ticketRepository.findById(ticketId)).willReturn(Optional.of(ticket));
+        given(ticketRepository.findById(ticket.getId())).willReturn(Optional.of(ticket));
         given(userService.getCurrentUser()).willReturn(currentUser);
 
         // ACT ve ASSERT
         assertThrows(AccessDeniedException.class, () -> {
-            ticketService.updateTicketStatus(ticketId, dtoStatus);
+            ticketService.updateTicketStatus(ticket.getId(), dtoStatus);
         });
 
         verify(ticketRepository, never()).save(any(Ticket.class));
+        verifyNoMoreInteractions(ticketRepository);
 
     }
-
 
     @ParameterizedTest
     @CsvSource({
@@ -265,20 +247,15 @@ public class TicketServiceTest {
     @DisplayName("Geçerli tüm statü geçiş senaryoları başarıyla kaydedilmelidir")
     void updateStatus_WithValidTransitions_ShouldSucceed(TicketStatus initialStatus, TicketStatus targetStatus) {
         // ARRANGE
-        UUID ticketId = UUID.randomUUID();
-        User user = createUser(UUID.randomUUID());
+        User user = createTestUser();
         TicketStatusUpdateRequestDto requestStatusDto = new TicketStatusUpdateRequestDto(targetStatus);
-        Ticket ticket = Ticket.builder()
-                .id(ticketId)
-                .assignedTo(user)
-                .status(initialStatus)
-                .build();
+        Ticket ticket = createTestTicket(user, initialStatus);
 
-        given(ticketRepository.findById(ticketId)).willReturn(Optional.of(ticket));
+        given(ticketRepository.findById(ticket.getId())).willReturn(Optional.of(ticket));
         given(userService.getCurrentUser()).willReturn(user);
 
         // ACT
-        ticketService.updateTicketStatus(ticketId, requestStatusDto);
+        ticketService.updateTicketStatus(ticket.getId(), requestStatusDto);
 
         // ASSERT
         verify(ticketRepository, times(1)).save(any(Ticket.class));
@@ -298,26 +275,20 @@ public class TicketServiceTest {
     @DisplayName("Geçersiz tüm statü geçiş senaryoları hata dönmelidir")
     void updateStatus_WithInvalidTransition_ThrowsException(TicketStatus initialStatus, TicketStatus targetStatus) {
         // ARRANGE
-        UUID ticketId = UUID.randomUUID();
-        User user = createUser(UUID.randomUUID());
+        User user = createTestUser();
         TicketStatusUpdateRequestDto requestStatusDto = new TicketStatusUpdateRequestDto(targetStatus);
-        Ticket ticket = Ticket.builder()
-                .id(ticketId)
-                .assignedTo(user)
-                .status(initialStatus)
-                .build();
+        Ticket ticket = createTestTicket(user, initialStatus);
 
-        given(ticketRepository.findById(ticketId)).willReturn(Optional.of(ticket));
+        given(ticketRepository.findById(ticket.getId())).willReturn(Optional.of(ticket));
         given(userService.getCurrentUser()).willReturn(user);
 
         // ACT ve ASSERT
         assertThrows(BusinessException.class, () -> {
-        ticketService.updateTicketStatus(ticketId, requestStatusDto);
+            ticketService.updateTicketStatus(ticket.getId(), requestStatusDto);
         });
 
         verify(ticketRepository, never()).save(any(Ticket.class));
     }
-
 
     @DisplayName("Bilet güncelleme metodunda güncellenmek istenen biletin bulunamaması durumunda ResourceNotFoundException türünde hata fırlatması.")
     @Test
@@ -341,11 +312,9 @@ public class TicketServiceTest {
     void updateTicket_WhenUserNotOwner_ThrowsException() {
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
-        UUID otherUserId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
 
-        User otherUser = createUser(otherUserId);
-        User currentUser = createUser(currentUserId);
+        User otherUser = createTestUser();
+        User currentUser = createTestUser();
 
         Ticket ticket = Ticket.builder()
                 .id(ticketId)
@@ -370,12 +339,10 @@ public class TicketServiceTest {
 
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
-        UUID oldAssigneeId = UUID.randomUUID();
         UUID newAssigneeId = UUID.randomUUID();
 
-        User oldAssignee = createUser(oldAssigneeId);
-        User currentUser = createUser(currentUserId);
+        User oldAssignee = createTestUser();
+        User currentUser = createTestUser();
 
         Ticket ticket = Ticket.builder()
                 .id(ticketId)
@@ -405,11 +372,9 @@ public class TicketServiceTest {
     void updateTicket_WithNullAssignee_ShouldSucceed() {
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
-        UUID oldAssigneeId = UUID.randomUUID();
 
-        User oldAssignee = createUser(oldAssigneeId);
-        User currentUser = createUser(currentUserId);
+        User oldAssignee = createTestUser();
+        User currentUser = createTestUser();
 
         Ticket ticket = Ticket.builder()
                 .id(ticketId)
@@ -438,13 +403,11 @@ public class TicketServiceTest {
 
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
-        UUID oldAssigneeId = UUID.randomUUID();
         UUID newAssigneeId = UUID.randomUUID();
 
-        User newAssignee = createUser(newAssigneeId);
-        User oldAssignee = createUser(oldAssigneeId);
-        User currentUser = createUser(currentUserId);
+        User newAssignee = createTestUser();
+        User oldAssignee = createTestUser();
+        User currentUser = createTestUser();
 
         Ticket ticket = Ticket.builder()
                 .id(ticketId)
@@ -474,13 +437,11 @@ public class TicketServiceTest {
 
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
-        UUID oldAssigneeId = UUID.randomUUID();
         UUID newAssigneeId = UUID.randomUUID();
 
-        User newAssignee = createUser(newAssigneeId);
-        User oldAssignee = createUser(oldAssigneeId);
-        User currentUser = createUser(currentUserId);
+        User newAssignee = createTestUser();
+        User oldAssignee = createTestUser();
+        User currentUser = createTestUser();
 
         Ticket ticket = Ticket.builder()
                 .id(ticketId)
@@ -510,13 +471,11 @@ public class TicketServiceTest {
 
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
-        UUID oldAssigneeId = UUID.randomUUID();
         UUID newAssigneeId = UUID.randomUUID();
 
-        User newAssignee = createUser(newAssigneeId);
-        User oldAssignee = createUser(oldAssigneeId);
-        User currentUser = createUser(currentUserId);
+        User newAssignee = createTestUser();
+        User oldAssignee = createTestUser();
+        User currentUser = createTestUser();
 
         Ticket ticket = Ticket.builder()
                 .id(ticketId)
@@ -548,13 +507,11 @@ public class TicketServiceTest {
 
         // ARRANGE
         UUID ticketId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
-        UUID oldAssigneeId = UUID.randomUUID();
         UUID newAssigneeId = UUID.randomUUID();
 
-        User newAssignee = createUser(newAssigneeId);
-        User oldAssignee = createUser(oldAssigneeId);
-        User currentUser = createUser(currentUserId);
+        User newAssignee = createTestUser();
+        User oldAssignee = createTestUser();
+        User currentUser = createTestUser();
 
         Ticket ticket = Ticket.builder()
                 .id(ticketId)
@@ -610,70 +567,170 @@ public class TicketServiceTest {
         verify(ticketRepository, times(1)).findById(ticketId);
     }
 
-    @DisplayName("Repositoryde bulun(may)an toplam bilet sayısını başarıyla dönmelidir")
     @Test
-    void totalTicketCount() {
-
+    void updateAllTicketsByDeletedUserId_ShouldSucceed() {
         // ARRANGE
-        long expectedCount = 10L;
-        given(ticketRepository.count()).willReturn(expectedCount);
+        UUID userId = UUID.randomUUID();
+        User systemPool = createSystemPoolUser();
+        List<Ticket> activeTickets = List.of(Ticket.builder().build(), new Ticket());
+
+        given(userService.getSystemPool()).willReturn(systemPool);
+        given(ticketRepository.findAllByassignedTo_IdAndStatusNot(userId, TicketStatus.DONE)).willReturn(activeTickets);
 
         // ACT
-        Long result = ticketService.totalTicketCount();
+        ticketService.updateAllTicketsByDeletedUserId(userId);
 
         // ASSERT
-        assertEquals(expectedCount, result);
-        verify(ticketRepository, times(1)).count();
+        verify(ticketRepository, times(1)).saveAll(ticketListCaptor.capture());
+
+        List<Ticket> capturedTickets = ticketListCaptor.getValue();
+
+        assertThat(capturedTickets).hasSize(2);
+        assertThat(capturedTickets).allSatisfy(ticket -> {
+            assertThat(ticket.getTitle()).isEqualTo("Atama bekliyor!");
+            assertThat(ticket.getStatus()).isEqualTo(TicketStatus.BACKLOG);
+            assertThat(ticket.getAssignedTo()).isEqualTo(systemPool);
+        });
+
+        verifyNoMoreInteractions(ticketRepository);
 
     }
 
-    @DisplayName("Tüm statüler için bilet sayıları (boş olanlar dahil 0 olarak) doğru dönmelidir")
     @Test
-    void getEachStatusTotalTicketsCount_ShouldReturnMapWithAllStatuses() {
+    void updateAllTicketsByDeletedUserId_WhenEmptyList() {
         // ARRANGE
-        List<Object[]> mockResults = List.of(
-                new Object[] { TicketStatus.OPEN, 5L },
-                new Object[] { TicketStatus.IN_PROGRESS, 2L });
-        given(ticketRepository.countTicketsByStatusRaw()).willReturn(mockResults);
+        UUID userId = UUID.randomUUID();
+        given(ticketRepository.findAllByassignedTo_IdAndStatusNot(userId, TicketStatus.DONE))
+                .willReturn(Collections.emptyList());
 
         // ACT
-        Map<TicketStatus, Long> result = ticketService.getEachStatusTotalTicketsCount();
+        ticketService.updateAllTicketsByDeletedUserId(userId);
 
         // ASSERT
-        assertEquals(5L, result.get(TicketStatus.OPEN));
-        assertEquals(2L, result.get(TicketStatus.IN_PROGRESS));
-        assertEquals(0L, result.get(TicketStatus.DONE)); // Veritabanında yok ama Map'te 0 olmalı
-        assertEquals(TicketStatus.values().length, result.size());
+        verify(ticketRepository, never()).saveAll(anyList());
+        verifyNoMoreInteractions(ticketRepository);
+
     }
 
     @Test
-    void getLast5Tickets_WhenListEmpty() {
+    void claimTicket_ShouldSucceed() {
+        // ARRANGE
+        User systemPool = createSystemPoolUser();
+        Ticket ticket = Ticket.builder().assignedTo(systemPool).build();
+        RequestTicketClaimDto dto = new RequestTicketClaimDto("Yeni baslik");
 
-        List<Ticket> list = List.of();
-        given(ticketRepository.findTop5ByOrderByCreatedAtDateDesc()).willReturn(list);
+        given(ticketRepository.findById(ticket.getId())).willReturn(Optional.of(ticket));
 
-        ticketService.getLast5Tickets();
+        // ACT
+        ticketService.claimTicket(ticket.getId(), dto);
 
-        verify(ticketMapper, times(0)).toDto(any(Ticket.class));
+        // ASSERT
+        verify(ticketRepository, times(1)).save(ticketArgumentCaptor.capture());
+        verifyNoMoreInteractions(ticketRepository);
+
+        Ticket capturedTicket = ticketArgumentCaptor.getValue();
+        assertThat(capturedTicket.getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
+        assertThat(capturedTicket.getTitle()).isEqualTo(dto.newTitle());
+
     }
 
-    @DisplayName("Son oluşturulan 5 bilet oluşturulma tarihine göre listelenmelidir.")
     @Test
-    void getLast5Tickets() {
+    void claimTicket_WhenTicketDoesNotExist_ThrowsException() {
+        // ARRANGE
+        UUID ticketId = UUID.randomUUID();
+        RequestTicketClaimDto dto = new RequestTicketClaimDto("Yeni baslik");
 
-        User user = createUser(UUID.randomUUID());
-        Ticket ticket = Ticket.builder()
-                .title("title")
-                .description("description")
-                .priority(TicketPriority.LOW)
-                .assignedTo(user)
-                .build();
-        List<Ticket> list = List.of(ticket);
-        given(ticketRepository.findTop5ByOrderByCreatedAtDateDesc()).willReturn(list);
+        given(ticketRepository.findById(ticketId)).willReturn(Optional.empty());
 
-        ticketService.getLast5Tickets();
+        // ACT
+        assertThrows(ResourceNotFoundException.class, () -> {
+            ticketService.claimTicket(ticketId, dto);
+        });
 
-        verify(ticketMapper, times(1)).toDto(any(Ticket.class));
+        // ASSERT
+        verify(ticketRepository, never()).save(any(Ticket.class));
+        verify(ticketMapper, never()).toDto(any(Ticket.class));
+        verifyNoMoreInteractions(ticketRepository);
+
+    }
+
+    @Test
+    void claimTicket_WhenTicketAlreadyClaim_ThrowsException() {
+        // ARRANGE
+        User user = createTestUser(UUID.randomUUID());
+        Ticket ticket = Ticket.builder().assignedTo(user).build();
+        RequestTicketClaimDto dto = new RequestTicketClaimDto("Yeni baslik");
+
+        given(ticketRepository.findById(ticket.getId())).willReturn(Optional.of(ticket));
+
+        // ACT
+        assertThrows(AccessDeniedException.class, () -> {
+            ticketService.claimTicket(ticket.getId(), dto);
+        });
+
+        verify(ticketRepository, never()).save(any(Ticket.class));
+        verify(ticketMapper, never()).toDto(any(Ticket.class));
+        verifyNoMoreInteractions(ticketRepository);
+
+    }
+
+    @Test
+    void getTicket_WhenTicketExists_ShouldSucceed() {
+        // ARRANGE
+        User user = createTestUser();
+        Ticket ticket = createTestTicket(user);
+
+        given(ticketRepository.findById(ticket.getId())).willReturn(Optional.of(ticket));
+
+        // ACT
+        ResponseTicketDto result = ticketService.getTicket(ticket.getId());
+
+        verify(ticketRepository, times(1)).findById(ticket.getId());
+        verify(ticketMapper, times(1)).toDto(ticket);
+        verifyNoMoreInteractions(ticketRepository);
+    }
+
+    @Test
+    void getTicket_WhenTicketDoesNotExist_ThrowsResourceNotFoundException() {
+        UUID ticketId = UUID.randomUUID();
+
+        given(ticketRepository.findById(ticketId)).willReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            ticketService.getTicket(ticketId);
+
+        });
+
+        verify(ticketRepository, never()).save(any(Ticket.class));
+        verify(ticketMapper, never()).toDto(any(Ticket.class));
+        verifyNoMoreInteractions(ticketRepository);
+    }
+
+    @Test
+    void filter() {
+        String title = "";
+        TicketStatus status = TicketStatus.IN_PROGRESS;
+        TicketPriority priority = TicketPriority.LOW;
+        UUID assignedToId = UUID.randomUUID();
+        int page = 1;
+        int size = 20;
+
+        // Mockito ile Page objesi dönmek için PageImpl kullanılır
+        Page<Ticket> mockPage = new PageImpl<>(List.of(new Ticket()), PageRequest.of(page, size), 1);
+
+        given(ticketRepository.findAll(any(Specification.class), any(Pageable.class))).willReturn(mockPage);
+
+        // --- ACT ---
+        ticketService.filterTickets(title, status, priority,
+                assignedToId, page, size);
+
+        // --- ASSERT ---
+        verify(ticketRepository).findAll(any(Specification.class), pageableCaptor.capture());
+
+        Pageable capturedPageable = pageableCaptor.getValue();
+        assertThat(capturedPageable.getPageNumber()).isEqualTo(page);
+        assertThat(capturedPageable.getPageSize()).isEqualTo(size);
+
     }
 
     @Test
@@ -688,36 +745,20 @@ public class TicketServiceTest {
 
         Ticket ticket = Ticket.builder().title("Filtrelenmiş Bilet").build();
         List<Ticket> ticketList = List.of(ticket);
-        Page<Ticket> ticketPage = new PageImpl<>(ticketList); 
+        Page<Ticket> ticketPage = new PageImpl<>(ticketList);
 
-        given(ticketRepository.findAll(any(Specification.class), any(Pageable.class))).willReturn(ticketPage);
+        given(ticketRepository.findAll(any(Specification.class),
+                any(Pageable.class))).willReturn(ticketPage);
 
         // ACT
-        Page<ResponseTicketDto> result = ticketService.filterTickets(title,status, priority, assignedToId, page, size);
+        Page<ResponseTicketDto> result = ticketService.filterTickets(title, status,
+                priority, assignedToId, page, size);
 
         // ASSERT
         assertEquals(1, result.getTotalElements());
         assertEquals("Filtrelenmiş Bilet", result.getContent().get(0).title());
-        verify(ticketRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
-    }
-
-    private Ticket createTicket(User user, RequestCreateTicketDto requestCreateTicketDto) {
-        return Ticket.builder()
-                .title(requestCreateTicketDto.title())
-                .description(requestCreateTicketDto.description())
-                .priority(requestCreateTicketDto.priority())
-                .assignedTo(user)
-                .build();
-    }
-
-    private User createUser(UUID userId) {
-        return User.builder()
-                .id(userId)
-                .name("Kafein")
-                .surname("Solutions")
-                .email("kafein@hotmail.com")
-                .password("HashedPassword123!")
-                .build();
+        verify(ticketRepository, times(1)).findAll(any(Specification.class),
+                any(Pageable.class));
     }
 
 }
