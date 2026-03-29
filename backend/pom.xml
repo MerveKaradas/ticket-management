@@ -133,6 +133,12 @@
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 		
+		<!-- Security test-->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
