@@ -720,11 +720,11 @@ public class TicketServiceTest {
 
         given(ticketRepository.findAll(any(Specification.class), any(Pageable.class))).willReturn(mockPage);
 
-        // --- ACT ---
+        // ACT 
         ticketService.filterTickets(title, status, priority,
                 assignedToId, page, size);
 
-        // --- ASSERT ---
+        // ASSERT
         verify(ticketRepository).findAll(any(Specification.class), pageableCaptor.capture());
 
         Pageable capturedPageable = pageableCaptor.getValue();

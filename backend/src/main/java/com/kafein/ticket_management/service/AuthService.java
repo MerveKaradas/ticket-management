@@ -116,6 +116,7 @@ public class AuthService {
         ResponseCookie cookie = ResponseCookie.from("refreshToken", tokens.get("refreshToken"))
                 .httpOnly(true)
                 .secure(true)
+                .sameSite("Lax") 
                 .path("/").build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -135,6 +136,7 @@ public class AuthService {
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
+                .sameSite("Lax") 
                 .maxAge(0) // Hemen yok eder
                 .build();
 
@@ -156,6 +158,7 @@ public class AuthService {
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
+                .sameSite("Lax") 
                 .maxAge(0)
                 .build();
 

@@ -93,7 +93,7 @@ public class CommentServiceTest {
         List<Comment> comments = List.of(comment, comment);
 
         given(ticketService.getTicketById(ticketId)).willReturn(Optional.of(ticket));
-        given(commentRepository.findAllByTicketOrderByCreatedAtDesc(ticket)).willReturn(comments);
+        given(commentRepository.findAllByTicketIdWithAuthor(ticket)).willReturn(comments);
         // ACT
         commentService.getAllCommentsByTicketId(ticketId);
 

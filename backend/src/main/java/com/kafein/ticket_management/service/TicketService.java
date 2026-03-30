@@ -199,6 +199,10 @@ public class TicketService {
         List<Ticket> activeTickets = ticketRepository.findAllByassignedTo_IdAndStatusNot(
                 userId, TicketStatus.DONE);
 
+        if(activeTickets.isEmpty()){
+            return;
+        }
+
         activeTickets.forEach(ticket -> {
             ticket.setStatus(TicketStatus.BACKLOG);
             ticket.setAssignedTo(systemPool);

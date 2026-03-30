@@ -93,9 +93,9 @@ public class GlobalExceptionHandler {
         }
 
         @ExceptionHandler(DisabledException.class)
-        public ResponseEntity<String> handleDisabledAccount(DisabledException ex) {
+        public ResponseEntity<ErrorResponse> handleDisabledAccount(DisabledException ex, HttpServletRequest request) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                                .body("Hesabınız pasife alınmıştır.");
+                                .body(buildError(HttpStatus.FORBIDDEN, "Hesabınız pasife alınmıştır.", request));
         }
 
         @ExceptionHandler(Exception.class)
