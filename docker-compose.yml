@@ -36,3 +36,10 @@ services:
       - ticket-management
     environment:
       - VITE_API_BASE_URL=http://localhost:8080 
+
+  redis:
+    image: redis:latest
+    container_name: container-redis
+    ports:
+      - "6379:6379"
+    restart: always

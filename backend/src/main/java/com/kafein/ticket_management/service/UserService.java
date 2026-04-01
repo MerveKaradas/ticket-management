@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -48,6 +50,7 @@ public class UserService {
 
     @Transactional
     @Audit(action = "USER_CREATED")
+    @CacheEvict(value = {"users", "analytics"}, allEntries = true)
     public ResponseUserDto createUser(RequestCreateUserDto requestCreateUserDto) {
 
         if (userRepository.existsByEmail(requestCreateUserDto.email())) {
@@ -130,6 +133,7 @@ public class UserService {
         return currentUser;
     }
 
+    @Cacheable(value = "users", key = "#root.methodName")
     public List<ResponseUserForAssignmentDto> getAllUsersForAssignment() {
         return userRepository.findAllByActiveTrue()
                 .stream()
@@ -149,6 +153,7 @@ public class UserService {
     @Transactional
     @Audit(action = "USER_DELETED")
     @PreAuthorize("hasRole('ADMIN')")
+    @CacheEvict(value = "users", allEntries = true)
     public void softDelete(UUID id) {
 
         User deletedUser = userRepository.findById(id)

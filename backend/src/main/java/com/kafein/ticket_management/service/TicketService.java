@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -48,6 +49,7 @@ public class TicketService {
 
     @Transactional
     @Audit(action = "TICKET_CREATED")
+    @CacheEvict(value = "analytics", allEntries = true)
     public ResponseCreateTicketDto createTicket(RequestCreateTicketDto requestCreateTicketDto) {
 
         User user = userService.getUserById(requestCreateTicketDto.assignedToId())
@@ -79,14 +81,15 @@ public class TicketService {
     @Transactional
     @Audit(action = "TICKET_DELETE_ALL")
     @PreAuthorize("hasRole('ADMIN')")
+    @CacheEvict(value = "analytics", allEntries = true)
     public void deleteAllTickets() {
-
         ticketRepository.deleteAll();
     }
 
     @Transactional
     @Audit(action = "TICKET_DELETE")
     @PreAuthorize("hasRole('ADMIN')")
+    @CacheEvict(value = "analytics", allEntries = true)
     public void deleteTicketById(UUID id) {
 
         if (!ticketRepository.existsById(id)) {
@@ -110,6 +113,7 @@ public class TicketService {
 
     @Transactional
     @Audit(action = "TICKET_UPDATE_STATUS")
+    @CacheEvict(value = "analytics", allEntries = true)
     public ResponseTicketDto updateTicketStatus(UUID ticketId, TicketStatusUpdateRequestDto requestStatusDto) {
 
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -138,6 +142,7 @@ public class TicketService {
 
     @Transactional
     @Audit(action = "TICKET_UPDATE")
+    @CacheEvict(value = "analytics", allEntries = true)
     public ResponseTicketDto updateTicket(UUID ticketId, RequestTicketDto requestTicketDto) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));
@@ -191,6 +196,7 @@ public class TicketService {
     }
 
     @Transactional
+    @CacheEvict(value = "analytics", allEntries = true)
     public void updateAllTicketsByDeletedUserId(UUID userId) {
 
         User systemPool = userService.getSystemPool();
@@ -215,6 +221,7 @@ public class TicketService {
 
     @Transactional
     @Audit(action = "TICKET_CLAIM")
+    @CacheEvict(value = "analytics", allEntries = true)
     public ResponseTicketDto claimTicket(UUID ticketId, RequestTicketClaimDto claimDto) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", ticketId));

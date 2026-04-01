@@ -20,4 +20,8 @@ spring:
         secret: ${JWT_SECRET}
         jwt-expiration-in-ms: ${JWT_EXPIRATION}
         refresh-token-expiration-in-ms : ${REFRESH_TOKEN_EXPIRATION}
+  data:
+    redis:
+      host: container-redis
+      port: 6379
         

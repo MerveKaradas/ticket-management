@@ -7,16 +7,18 @@ import com.kafein.ticket_management.model.enums.AuditLogStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class ResponseAuditLogDto {
-   private final Long id;
-    private final String operation;    
-    private final String details;    
-    private final String errorMessage;    
-    private final String performedBy;  
-    private final LocalDateTime createdAtDate; 
-    private final AuditLogStatus status;     
+   private Long id;
+    private String operation;    
+    private String details;    
+    private String errorMessage;    
+    private String performedBy;  
+    private LocalDateTime createdAtDate; 
+    private AuditLogStatus status;     
 }

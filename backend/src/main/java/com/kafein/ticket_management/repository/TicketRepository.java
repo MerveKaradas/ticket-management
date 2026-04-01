@@ -18,6 +18,8 @@ import com.kafein.ticket_management.model.Ticket;
 import com.kafein.ticket_management.model.enums.TicketStatus;
 
 public interface TicketRepository extends JpaRepository<Ticket, UUID>, JpaSpecificationExecutor<Ticket> {
+    
+    @EntityGraph(attributePaths = {"createdBy", "assignedTo", "updatedBy"})
     List<Ticket> findTop5ByOrderByCreatedAtDateDesc();
 
     @Query("SELECT t.status, COUNT(t) FROM Ticket t GROUP BY t.status")

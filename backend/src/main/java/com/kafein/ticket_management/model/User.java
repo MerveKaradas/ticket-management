@@ -9,6 +9,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.kafein.ticket_management.model.enums.Role;
 
 import jakarta.persistence.Column;
@@ -38,7 +40,9 @@ import lombok.ToString;
 @Getter
 @ToString
 @EqualsAndHashCode
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class User implements UserDetails {
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue
@@ -69,11 +73,13 @@ public class User implements UserDetails {
 
     // Security yetki kontrolü için kullanıcı rolü
     @Override
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + this.role));
     }
 
     @Override
+    @JsonIgnore // Redis'e yazarken bunu ayrıca yazmasına gerek yok, email'i kullanıyor zaten
     public String getUsername() {
         return this.email;
     }

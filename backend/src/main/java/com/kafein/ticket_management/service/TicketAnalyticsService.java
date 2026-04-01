@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.kafein.ticket_management.dto.response.ResponseTicketDto;
@@ -27,10 +28,13 @@ public class TicketAnalyticsService {
         this.ticketMapper = ticketMapper;
     }
 
+    @Cacheable(value = "analytics", key = "#root.methodName")
     public Long totalTicketCount() {
-        return ticketRepository.count();
+        Object result = ticketRepository.count();
+        return ((Number) result).longValue();
     }
 
+    @Cacheable(value = "analytics", key = "#root.methodName")
     public Map<TicketStatus, Long> getEachStatusTotalTicketsCount() {
         List<Object[]> results = ticketRepository.countTicketsByStatusRaw();
         Map<TicketStatus, Long> statusMap = new HashMap<>();
@@ -57,6 +61,7 @@ public class TicketAnalyticsService {
                 .toList();
     }
 
+    @Cacheable(value = "analytics", key = "#root.methodName")
     public Map<TicketPriority, Long> getTotalPriority() {
         List<Object[]> results = ticketRepository.countTicketsByPriorityRaw();
         Map<TicketPriority, Long> priorityMap = new HashMap<>();
@@ -77,6 +82,7 @@ public class TicketAnalyticsService {
         return priorityMap;
     }
 
+    @Cacheable(value = "analytics", key = "#root.methodName")
     public Double calculateAverageResolveTime() {
         // Sadece DONE
         List<Ticket> resolvedTickets = ticketRepository.findAllByStatus(TicketStatus.DONE);
@@ -100,6 +106,7 @@ public class TicketAnalyticsService {
         return Math.round(averageHours * 100.0) / 100.0;
     }
 
+    @Cacheable(value = "analytics", key = "#root.methodName")
     public Map<String, Long> getUserWorkloadDistribution() {
         List<Object[]> results = ticketRepository.countTicketsByFullAssigneeName();
 
@@ -109,6 +116,7 @@ public class TicketAnalyticsService {
                         result -> (Long) result[1]));
     }
 
+    @Cacheable(value = "analytics", key = "#root.methodName")
     public Map<String, Long> getDailyTrendAnalysis() {
         // Gün başlangıcı
         LocalDateTime startOfDay = LocalDateTime.now().with(LocalTime.MIN);

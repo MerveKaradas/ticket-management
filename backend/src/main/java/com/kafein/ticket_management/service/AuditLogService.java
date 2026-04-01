@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class AuditLogService {
     
     // Propagation.REQUIRES_NEW : Ana işlem hata alsa bile logun kaydedilmesini sağlar
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @CacheEvict(value = "auditStats", allEntries = true)
     public void createLog(String operation, String performedBy, AuditLogStatus status, String details, String errorMessage) {
         AuditLog log = AuditLog.builder()
                 .operation(operation)
@@ -49,6 +52,7 @@ public class AuditLogService {
         return auditLogRepository.streamAllByQuery(query);
     }
 
+    @Cacheable(value = "auditStats", key = "'failRate'")
     public Double calculateSystemFailRate() {
         long totalLogs = auditLogRepository.count();
 
@@ -64,6 +68,7 @@ public class AuditLogService {
     }
 
 
+    @Cacheable(value = "auditStats", key = "'recentLogs'")
      public List<ResponseAuditLogDto> getRecentSecurityLogs() {
         List<AuditLog> logs = auditLogRepository.findTop5ByOrderByCreatedAtDateDesc();
 

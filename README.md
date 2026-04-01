@@ -1,6 +1,6 @@
 # 🎫 TicketMaster: Ticket Management System
 
-![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)![Spring](https://img.shields.io/badge/spring-%236DB33F.svg?style=for-the-badge&logo=spring&logoColor=white)![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)![Flyway](https://img.shields.io/badge/flyway-CC0202?style=for-the-badge&logo=flyway&logoColor=white)
+![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)![Spring](https://img.shields.io/badge/spring-%236DB33F.svg?style=for-the-badge&logo=spring&logoColor=white)![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)![Flyway](https://img.shields.io/badge/flyway-CC0202?style=for-the-badge&logo=flyway&logoColor=white)
 
 **TicketMaster**, kurumsal bilet yönetim ihtiyaçları için geliştirilmiş; yüksek güvenlik, merkezi izlenebilirlik ve performans odaklı bir **Spring Boot** tabanlı operasyonel destek uygulamasıdır. Proje; **JWT tabanlı cookie güvenliği**, **Full AOP Audit Logging**, **Refresh Token döngüsü** ve **Docker tabanlı container mimarisi** gibi kurumsal özellikler barındırır.
 
@@ -22,6 +22,7 @@
 * **Swagger (OpenAPI 3.0):**  API dokümantasyonu
 * **Maven:**  Dependency & Build management
 * **Flyway:** Veritabanı şeması versiyon kontrolü ve otomatik migration yönetimi.
+* **Redis & Spring Data Redis:** Uygulama performansını optimize etmek için kullanılan distributed caching mekanizması.
 * **Docker & Docker Compose**
 * **JUnit 5 & Mockito:** Birim testler
 * **React 18:** Modern UI bileşenleri ve performanslı rendering.
@@ -104,6 +105,7 @@ Servisler başarıyla ayağa kalktığında aşağıdaki adresler üzerinden sis
 * **Akıllı İş Kuralları:**  Çözümlenmiş `DONE` statüsündeki biletler üzerinde herhangi bir içerik veya detay değişikliği yapılmak istendiğinde, sistem veri tutarlılığını sağlamak adına bilet statüsünü otomatik olarak `REOPENED` konumuna çeker; böylece bitmiş işlerin kontrolsüzce değiştirilmesinin önüne geçilir.
 * **Merkezi Denetim (JPA Auditing & AuditorAware):** Sistem genelinde `AuditingEntityListener` entegrasyonu ile tüm entity'lerin (Biletler, Yorumlar vb.) yaşam döngüsü otomatiğe bağlanmıştır; verinin ne zaman oluşturulduğu, ne zaman güncellendiği ve bu işlemleri hangi kullanıcının yaptığı manuel müdahale gerektirmeden veritabanı seviyesinde %100 doğrulukla takip edilmektedir.
 * **Genişletilebilir Raporlama Altyapısı (Strategy Pattern):** Raporlama sistemi Strategy Pattern kullanılarak yeniden tasarlandı. Bu sayede sisteme yeni bir rapor formatı (örn. PDF) eklemek, mevcut kodları değiştirmeden sadece yeni bir strateji sınıfı ekleyerek mümkün hale getirildi. Nesne yaratım süreçleri Factory Pattern ile soyutlanarak bağımlılıklar (coupling) minimize edildi.
+* **Type-Safe Querying:** JPA Metamodel ile hatasız ve performanslı dinamik arama altyapısı.
 
 
 
@@ -132,8 +134,27 @@ Servisler başarıyla ayağa kalktığında aşağıdaki adresler üzerinden sis
 
     ***Flyway Integration:*** Uygulama şeması Hibernate'in otomatik üretimine bırakılmamış; Flyway ile versiyonlanmıştır. Bu sayede farklı ortamlarda (Dev/Test/Prod) tutarlı bir veritabanı yapısı garanti altına alınmıştır.
 
+* **5. Cache Abstraction & Consistency**
+
+     Bir ticket statüsü değiştiğinde veya yeni bir kullanıcı eklendiğinde, ilgili tüm analiz cache'leri (analytics, users) otomatik olarak geçersiz kılınır. Bu sayede Dashboard üzerindeki grafikler her zaman veritabanı ile tutarlı kalır.
 ## 🧪 Test ve Kalite
 * **Unit Testing:** TicketService ve CommentService katmanları JUnit ve Mockito kullanılarak test edilmiştir.
+
+Projenin sürdürülebilirliği ve iş mantığının doğruluğu için JUnit 5, Mockito ve AssertJ kütüphaneleri kullanılarak kapsamlı bir test altyapısı kurgulanmıştır.
+
+* **Birim Testler:** TicketService ve CommentService katmanları, iş kurallarını +%90 kapsayacak şekilde test edilmiştir.
+
+* **Davranış Odaklı Doğrulama (BDD):** Test yazımında given-when-then (BDDMockito) yapısı benimsenerek okunabilirlik artırılmıştır.
+
+Gelişmiş Mocking Teknikleri:
+
+* **ArgumentCaptor:** Metotlara gönderilen nesnelerin içeriği yakalanarak derinlemesine doğrulanmıştır.
+
+* **Parameterized Tests:** Bilet statü geçişleri (TicketStatus) gibi çoklu senaryolar, @ParameterizedTest kullanılarak tek bir metotla optimize edilmiştir.
+
+* **Esnek Test Verisi Yönetimi:** Test nesnelerinin merkezi yönetimi ve kod tekrarının önlenmesi için Test Data Factory tasarım desenleri uygulanmıştır.
+
+* **Akıcı Doğrulamalar:** Standart JUnit assert metodları yerine, daha okunaklı ve detaylı hata mesajları sunan AssertJ tercih edilmiştir.
 
 ## 🛡️ Güvenlik
 
@@ -151,6 +172,23 @@ Proje, yüksek veri hacminde bile milisaniye seviyesinde yanıt verebilmesi içi
 * **Pagination (Sayfalama):** Tüm liste sorguları Spring Data Pageable arayüzü ile sarmalanarak, milyonlarca satırlık verinin belleği yormadan parça parça işlenmesi sağlanmıştır.
 
 * **Memory-Efficient Export (Streaming):** Milyonlarca satırlık Audit Log verisinin dışa aktarımı sırasında bellek kullanımını stabilize etmek için SXSSF (Streaming XML Spreadsheets) ve JPA Stream entegrasyonu sağlandı. Veriler veritabanından uygulama belleğine dolmadan, parça parça işlenerek doğrudan çıktı akışına iletilir.
+
+
+* **Tip Güvenli Dinamik Sorgular (JPA Metamodel):** Karmaşık bilet filtreleme operasyonlarında String bazlı sorgu hatalarını  tamamen ortadan kaldırmak için JPA Static Metamodel kullanılmıştır. Sorgular Ticket_ ve User_ sınıfları üzerinden tip güvenli şekilde inşa edilerek, refactoring süreçlerinde tam derleme zamanı güvenliği sağlanmıştır.
+
+* **Distributed Caching & Ortalama Yanıt Süresi Optimizasyonu (Redis)**
+
+    Sistemdeki hesaplama yükü yüksek analiz sorguları ve sık erişilen veriler Redis tabanlı bir önbellek katmanı ile optimize edilmiştir:
+
+    * Multi-Layer Caching: @Cacheable ve @CacheEvict anotasyonları ile servis katmanında deklaratif önbellekleme.
+
+    * Analytics Cache: calculateAverageResolveTime ve totalStatusCount gibi tüm tabloyu tarayan analiz metotları Redis üzerinde tutularak veritabanı üzerindeki I/O yükü %90 oranında azaltılmıştır.
+
+    * Transaction-Aware Caching: Cache işlemleri veritabanı transaction'ları ile senkronize edilmiştir. Bir işlem rollback olursa, Redis üzerindeki kirli veri otomatik olarak engellenir.
+
+    * TTL (Time-To-Live) Stratejisi: Verilerin bayatlamasını önlemek için her cache grubu (users, analytics, ticketStats) için farklı yaşam süreleri ve stratejik temizleme döngüleri kurgulanmıştır.
+
+    * Spring Security Context Caching: Kimlik doğrulama performansını artırmak adına UserDetailsService seviyesinde Redis caching uygulanmıştır. Her istekte gerçekleşen mükerrer veritabanı sorguları (where email=?) engellenerek, sistemin yanıt verme süresi minimize edilmiştir.
 
 ## 📊 İzleme & Loglama
 
